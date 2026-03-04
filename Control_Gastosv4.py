@@ -4,10 +4,15 @@ import plotly.express as px
 from datetime import datetime
 import os
 
-st.set_page_config(page_title="Control Gastos - Plan Maestro 2028", layout="centered")
+st.set_page_config(
+    page_title="Control Gastos - Plan Maestro 2028", 
+    layout="centered",
+    initial_sidebar_state="collapsed"
+)
 
-st.title("💰 CONTROL DE GASTOS - PLAN MAESTRO 2028")
-st.markdown("**Presupuesto mensual: $13,100**")
+# Título
+st.title("💰 CONTROL DE GASTOS")
+st.markdown("**Plan Maestro 2028 · Presupuesto mensual: $13,100**")
 st.divider()
 
 # ============================================
@@ -31,7 +36,7 @@ PRESUPUESTO = {
 RUBROS = list(PRESUPUESTO.keys())
 
 # ============================================
-# ARCHIVO DE PERSISTENCIA (para Streamlit Cloud)
+# ARCHIVO DE PERSISTENCIA
 # ============================================
 
 ARCHIVO_DATOS = "gastos_plan_maestro.csv"
@@ -76,7 +81,7 @@ if mes_guardado and mes_guardado != mes_actual:
     st.rerun()
 
 # ============================================
-# ENTRADA DE GASTOS (AHORA CON NEGATIVOS)
+# ENTRADA DE GASTOS (con negativos)
 # ============================================
 
 st.subheader("📥 Registrar movimiento")
@@ -90,13 +95,12 @@ with col2:
     rubro = st.selectbox("Rubro", RUBROS)
 
 with col3:
-    # ✅ AHORA ACEPTA NEGATIVOS (para corregir errores)
     monto = st.number_input("Monto ($)", value=0.0, step=10.0, format="%.2f")
 
 with col4:
     st.write("")
     st.write("")
-    if st.button("➕ Agregar/Corregir"):
+    if st.button("➕ Agregar", use_container_width=True):
         if monto != 0:
             nuevo_gasto = {
                 "fecha": fecha.strftime("%Y-%m-%d"),
@@ -105,7 +109,7 @@ with col4:
             }
             st.session_state.gastos.append(nuevo_gasto)
             guardar_gastos(st.session_state.gastos)
-            st.success("Movimiento registrado")
+            st.success("✅ Movimiento registrado")
             st.rerun()
         else:
             st.warning("El monto no puede ser cero")
@@ -120,36 +124,30 @@ if st.session_state.gastos:
     df = pd.DataFrame(st.session_state.gastos)
     df["fecha"] = pd.to_datetime(df["fecha"])
 
-    st.subheader("📋 Movimientos registrados")
+    st.subheader("📋 Movimientos del mes")
 
+    # Mostrar tabla
     df_display = df.copy()
-    df_display["fecha"] = df_display["fecha"].dt.strftime("%Y-%m-%d")
+    df_display["fecha"] = df_display["fecha"].dt.strftime("%d/%m")
     df_display["monto"] = df_display["monto"].apply(lambda x: f"${x:,.2f}")
     st.dataframe(df_display, use_container_width=True, hide_index=True)
 
+    # Botones de acción
     col_b1, col_b2, col_b3 = st.columns(3)
     with col_b1:
-        if st.button("🗑️ Reiniciar mes"):
+        if st.button("🗑️ Reiniciar mes", use_container_width=True):
             st.session_state.gastos = []
             guardar_gastos([])
             st.rerun()
     
     with col_b2:
-        if st.button("📥 Exportar a Excel"):
-            try:
-                df.to_excel("gastos_exportados.xlsx", index=False)
-                st.success("Exportado como gastos_exportados.xlsx")
-            except:
-                st.warning("Instala openpyxl para exportar: pip install openpyxl")
-    
-    with col_b3:
-        if st.button("🔄 Recargar datos"):
+        if st.button("🔄 Recargar", use_container_width=True):
             st.rerun()
 
     st.divider()
 
 # ============================================
-# ANÁLISIS DETALLADO
+# ANÁLISIS POR RUBRO
 # ============================================
 
 st.subheader("📊 Control por rubro")
@@ -182,16 +180,55 @@ if st.session_state.gastos:
     if not alertas:
         st.success("✅ Todo dentro del presupuesto")
 
-    # Totales
+    # Total general
     st.divider()
     total_gastado = df["monto"].sum()
     disponible_total = 13100 - total_gastado
-    st.metric("💰 Total gastado", f"${total_gastado:,.2f}", 
-             delta=f"${disponible_total:,.2f} disponible",
-             delta_color="inverse" if disponible_total < 0 else "normal")
+    st.metric(
+        "💰 Total gastado", 
+        f"${total_gastado:,.2f}", 
+        delta=f"${disponible_total:,.2f} disponible",
+        delta_color="inverse" if disponible_total < 0 else "normal"
+    )
 
 else:
-    st.info("Aún no has registrado movimientos este mes.")
+    st.info("Aún no hay movimientos este mes")
+
+st.divider()
+
+# ============================================
+# RESPALDO DE DATOS (NUEVO)
+# ============================================
+
+st.subheader("📦 Respaldo y recuperación")
+
+col_r1, col_r2 = st.columns(2)
+
+with col_r1:
+    if st.session_state.gastos:
+        df_respaldo = pd.DataFrame(st.session_state.gastos)
+        csv = df_respaldo.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="📥 Descargar respaldo CSV",
+            data=csv,
+            file_name=f"gastos_{datetime.now().strftime('%Y%m')}.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+
+with col_r2:
+    archivo_subido = st.file_uploader("📤 Cargar respaldo", type=['csv'])
+
+if archivo_subido is not None:
+    try:
+        df_cargado = pd.read_csv(archivo_subido)
+        nuevos_gastos = df_cargado.to_dict('records')
+        st.session_state.gastos = nuevos_gastos
+        guardar_gastos(st.session_state.gastos)
+        st.success("✅ Datos cargados correctamente")
+        st.rerun()
+    except Exception as e:
+        st.error(f"Error al cargar: {e}")
 
 st.divider()
 
@@ -207,3 +244,5 @@ st.markdown("""
 
 > *"Control total, desde cualquier lugar."*
 """)
+
+st.caption(f"Última actualización: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
