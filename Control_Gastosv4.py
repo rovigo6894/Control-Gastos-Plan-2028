@@ -25,7 +25,7 @@ hide_streamlit_style = """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # ============================================
-# CSS PERSONALIZADO (FONDO MÁS CLARO Y ELEGANTE)
+# CSS PERSONALIZADO
 # ============================================
 st.markdown("""
 <style>
@@ -38,15 +38,6 @@ st.markdown("""
     .main {
         background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%);
         padding: 1rem;
-    }
-    
-    .card {
-        background: white;
-        border-radius: 2rem;
-        padding: 2rem;
-        box-shadow: 0 20px 35px -10px rgba(0,0,0,0.1);
-        margin-bottom: 1.5rem;
-        border: 1px solid rgba(255,255,255,0.8);
     }
     
     .header {
@@ -225,6 +216,7 @@ st.markdown("""
         justify-content: space-between;
         align-items: center;
         margin: 0.5rem 0;
+        padding: 0.5rem 0;
     }
     
     .subcategoria-gastado {
@@ -525,18 +517,18 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ============================================
-# CATEGORÍAS (VERSIÓN CORREGIDA - SIN HTML SUELTO)
+# CATEGORÍAS (VERSIÓN DEFINITIVA)
 # ============================================
 for categoria, datos in PRESUPUESTOS.items():
-    # Calcular gastos por subcategoría
-    gastos_cat = {}
-    for sub in datos['subcategorias']:
-        gastos_cat[sub] = sum(g['monto'] for g in gastos_del_mes() 
-                              if g['categoria'] == categoria and g['subcategoria'] == sub)
-    
     with st.expander(f"**{categoria}**", expanded=True):
-        # Construir TODO el HTML de las subcategorías en UNA SOLA cadena
-        html_subcategorias = ""
+        # Calcular gastos por subcategoría
+        gastos_cat = {}
+        for sub in datos['subcategorias']:
+            gastos_cat[sub] = sum(g['monto'] for g in gastos_del_mes() 
+                                  if g['categoria'] == categoria and g['subcategoria'] == sub)
+        
+        # Construir HTML como una sola cadena
+        html_content = ""
         
         for sub, presupuesto in datos['subcategorias'].items():
             gastado = gastos_cat.get(sub, 0)
@@ -545,25 +537,27 @@ for categoria, datos in PRESUPUESTOS.items():
             # Determinar clase de color
             fill_class = 'fill-green'
             status_class = 'status-good'
-            status_text = 'Bien'
             
             if porcentaje_sub > 100:
                 fill_class = 'fill-red'
                 status_class = 'status-danger'
-                status_text = '¡Excedido!'
             elif porcentaje_sub > 80:
                 fill_class = 'fill-yellow'
                 status_class = 'status-warning'
-                status_text = 'Cuidado'
             
-            # Agregar esta subcategoría al HTML acumulado
-            html_subcategorias += f"""
+            # Construir cada subcategoría
+            html_content += f"""
             <div class="subcategoria">
                 <div class="subcategoria-header">
                     <span class="subcategoria-nombre">{sub}</span>
                     <span class="status-badge {status_class}">{porcentaje_sub:.0f}%</span>
                 </div>
-                {f'<div class="subcategoria-detalle">{presupuesto["descripcion"]}</div>' if presupuesto['descripcion'] else ''}
+            """
+            
+            if presupuesto['descripcion']:
+                html_content += f'<div class="subcategoria-detalle">{presupuesto["descripcion"]}</div>'
+            
+            html_content += f"""
                 <div class="subcategoria-montos">
                     <span class="subcategoria-gastado">{format_money(gastado)}</span>
                     <span class="subcategoria-presupuesto">de {format_money(presupuesto['monto'])}</span>
@@ -574,14 +568,18 @@ for categoria, datos in PRESUPUESTOS.items():
             </div>
             """
         
-        # Mostrar TODO el HTML de UNA SOLA VEZ
-        st.markdown(html_subcategorias, unsafe_allow_html=True)
+        # Mostrar todo el HTML de una vez
+        if html_content:
+            st.markdown(html_content, unsafe_allow_html=True)
 
 # ============================================
 # FORMULARIO PARA AGREGAR GASTOS
 # ============================================
-st.markdown('<div class="form-card">', unsafe_allow_html=True)
-st.markdown('<div class="form-title">➕ Agregar / Corregir gasto</div>', unsafe_allow_html=True)
+st.markdown("""
+<div class="form-card">
+    <div class="form-title">➕ Agregar / Corregir gasto</div>
+</div>
+""", unsafe_allow_html=True)
 
 col1, col2 = st.columns(2)
 with col1:
@@ -589,16 +587,15 @@ with col1:
     categoria_sel = st.selectbox("Categoría", list(PRESUPUESTOS.keys()), key="cat_select")
     
 with col2:
-    # Subcategorías según categoría
     subcategorias = list(PRESUPUESTOS[categoria_sel]['subcategorias'].keys())
     subcategoria_sel = st.selectbox("Subcategoría", subcategorias, key="sub_select")
-    monto = st.number_input("Monto $ (positivo o negativo)", value=100, step=1, format="%d")
+    monto = st.number_input("Monto $ (positivo o negativo)", value=100, step=1)
 
 descripcion = st.text_input("Descripción")
 
-col_b1, col_b2, col_b3 = st.columns([1, 1, 1])
-with col_b2:
-    if st.button("💾 Guardar gasto", use_container_width=True):
+col_b1, col_b2, col_b3 = st.columns(3)
+with col_b1:
+    if st.button("💾 Guardar", use_container_width=True):
         if fecha and categoria_sel and subcategoria_sel and descripcion and monto != 0:
             nuevo_gasto = {
                 'fecha': datetime.combine(fecha, datetime.min.time()),
@@ -609,12 +606,12 @@ with col_b2:
             }
             st.session_state.gastos.append(nuevo_gasto)
             guardar_gastos(st.session_state.gastos)
-            st.success("✅ Gasto guardado permanentemente")
+            st.success("✅ Gasto guardado")
             st.rerun()
         else:
-            st.error("❌ Todos los campos son obligatorios")
+            st.error("❌ Completa todos los campos")
 
-with col_b3:
+with col_b2:
     if st.button("🔄 Reiniciar mes", use_container_width=True, type="secondary"):
         st.session_state.gastos = [g for g in st.session_state.gastos 
                                    if not (g['fecha'].year == st.session_state.current_month.year 
@@ -623,31 +620,26 @@ with col_b3:
         st.success("✅ Mes reiniciado")
         st.rerun()
 
-st.markdown('</div>', unsafe_allow_html=True)
-
 # ============================================
-# TABLA DE ÚLTIMOS GASTOS
+# ÚLTIMOS GASTOS
 # ============================================
 gastos_mes = gastos_del_mes()
 if gastos_mes:
     st.markdown("### 📋 Últimos gastos")
     df = pd.DataFrame(gastos_mes)
     df = df.sort_values('fecha', ascending=False).head(10)
-    df['fecha_str'] = df['fecha'].dt.strftime('%d/%m')
-    df['monto_str'] = df['monto'].apply(lambda x: format_money(x))
-    
     for _, row in df.iterrows():
-        cols = st.columns([1, 1.5, 1.5, 3, 1.5])
+        cols = st.columns([2, 2, 2, 4, 2])
         with cols[0]:
-            st.write(f"**{row['fecha_str']}**")
+            st.write(row['fecha'].strftime('%d/%m'))
         with cols[1]:
             st.write(row['categoria'])
         with cols[2]:
             st.write(row['subcategoria'])
         with cols[3]:
-            st.write(row['descripcion'][:25] + '...' if len(row['descripcion']) > 25 else row['descripcion'])
+            st.write(row['descripcion'][:20])
         with cols[4]:
-            st.write(f"**{row['monto_str']}**")
+            st.write(f"**${row['monto']:,.2f}**")
 
 # ============================================
 # FOOTER
@@ -655,7 +647,7 @@ if gastos_mes:
 st.markdown("""
 <div class="footer">
     <p>📧 contacto@optipension73.com · 📱 871 579 1810</p>
-    <p style="margin-top: 0.5rem;">✅ Datos guardados permanentemente en archivo · Cada mes independiente</p>
-    <p style="margin-top: 0.5rem;">© 2026 · OptiPensión 73 · Optimización Integral</p>
+    <p>✅ Datos guardados permanentemente · Cada mes independiente</p>
+    <p>© 2026 · OptiPensión 73</p>
 </div>
 """, unsafe_allow_html=True)
