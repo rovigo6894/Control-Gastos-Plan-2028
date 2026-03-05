@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime
 import json
 import os
+from io import BytesIO
 
 # ============================================
 # CONFIGURACIÓN INICIAL
@@ -25,7 +26,7 @@ hide_streamlit_style = """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # ============================================
-# DATOS DE PRESUPUESTOS (PRIMERO, ANTES DE USARLOS)
+# DATOS DE PRESUPUESTOS
 # ============================================
 PRESUPUESTOS = {
     'Alimentación': {
@@ -60,6 +61,170 @@ PRESUPUESTO_TOTAL = 13100
 ARCHIVO_DATOS = "gastos.json"
 
 # ============================================
+# FONDO MÁS CLARO (FONDO BLANCO PURO)
+# ============================================
+st.markdown("""
+<style>
+    /* Fondo blanco puro y limpio */
+    .stApp {
+        background: white !important;
+    }
+    
+    .main {
+        background: white !important;
+        padding: 1rem;
+    }
+    
+    /* Eliminar cualquier gradiente */
+    .css-1d391kg, .css-12oz5g7 {
+        background: white !important;
+    }
+    
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
+    
+    .header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        background: white;
+        padding: 1rem;
+        border-radius: 1rem;
+    }
+    
+    .logo {
+        background: #0f3b4f;
+        color: white;
+        width: 60px;
+        height: 60px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        box-shadow: 0 10px 18px -8px #0b2a3a;
+    }
+    
+    .title h1 {
+        color: #103c51;
+        font-size: 2rem;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    .title p {
+        color: #3c647a;
+        font-size: 0.9rem;
+        margin: 0;
+    }
+    
+    .month-selector {
+        background: #f8fafc;
+        border-radius: 3rem;
+        padding: 0.8rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 8px -4px #cbd5e1;
+    }
+    
+    .month-selector span {
+        font-weight: 600;
+        color: #1e293b;
+        font-size: 1.3rem;
+    }
+    
+    .resumen-fila {
+        background: #f8fafc;
+        border-radius: 1.5rem;
+        padding: 1.2rem 1.8rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 8px -4px #cbd5e1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .resumen-label {
+        color: #475569;
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
+    
+    .resumen-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+    
+    .resumen-number.warning {
+        color: #dc2626;
+    }
+    
+    .progress-container {
+        background: #f8fafc;
+        border-radius: 1.5rem;
+        padding: 1.2rem 1.8rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 8px -4px #cbd5e1;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .progress-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+        color: #475569;
+        font-weight: 500;
+    }
+    
+    .export-button {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 1rem;
+    }
+    
+    .footer {
+        text-align: center;
+        color: #64748b;
+        font-size: 0.8rem;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #e2e8f0;
+    }
+    
+    .stButton > button {
+        background: #2563eb !important;
+        color: white !important;
+        border: none !important;
+        padding: 0.8rem 2rem !important;
+        border-radius: 2rem !important;
+        font-weight: 600 !important;
+        font-size: 1rem !important;
+        width: 100% !important;
+        transition: all 0.2s !important;
+        box-shadow: 0 4px 12px -6px #1e40af !important;
+    }
+    
+    .stButton > button:hover {
+        background: #1d4ed8 !important;
+        transform: translateY(-2px);
+    }
+    
+    .stButton > button[kind="secondary"] {
+        background: #ef4444 !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# ============================================
 # FUNCIONES DE PERSISTENCIA
 # ============================================
 def cargar_gastos():
@@ -83,6 +248,31 @@ def guardar_gastos(gastos):
     
     with open(ARCHIVO_DATOS, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
+
+# ============================================
+# FUNCIÓN PARA EXPORTAR A EXCEL
+# ============================================
+def exportar_a_excel():
+    # Crear DataFrame con todos los gastos
+    if st.session_state.gastos:
+        df = pd.DataFrame(st.session_state.gastos)
+        df['fecha'] = pd.to_datetime(df['fecha']).dt.strftime('%Y-%m-%d')
+        df = df.sort_values('fecha', ascending=False)
+        
+        # Crear archivo Excel en memoria
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Gastos')
+            
+            # Ajustar ancho de columnas
+            worksheet = writer.sheets['Gastos']
+            for column in df:
+                column_width = max(df[column].astype(str).map(len).max(), len(column))
+                col_idx = df.columns.get_loc(column)
+                worksheet.column_dimensions[chr(65 + col_idx)].width = min(column_width + 2, 30)
+        
+        return output.getvalue()
+    return None
 
 # ============================================
 # INICIALIZAR SESSION STATE
@@ -117,320 +307,6 @@ def calcular_totales():
     return total, restante, porcentaje
 
 # ============================================
-# CSS PERSONALIZADO
-# ============================================
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
-    }
-    
-    .main {
-        background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%);
-        padding: 1rem;
-    }
-    
-    .header {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-    
-    .logo {
-        background: #0f3b4f;
-        color: white;
-        width: 60px;
-        height: 60px;
-        border-radius: 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2rem;
-        box-shadow: 0 10px 18px -8px #0b2a3a;
-    }
-    
-    .title h1 {
-        color: #103c51;
-        font-size: 2rem;
-        font-weight: 600;
-        margin: 0;
-    }
-    
-    .title p {
-        color: #3c647a;
-        font-size: 0.9rem;
-        margin: 0;
-    }
-    
-    .month-selector {
-        background: white;
-        border-radius: 3rem;
-        padding: 0.8rem 2rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 2rem;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 12px -6px #94a3b8;
-    }
-    
-    .month-selector span {
-        font-weight: 600;
-        color: #1e293b;
-        font-size: 1.3rem;
-    }
-    
-    .resumen-fila {
-        background: white;
-        border-radius: 1.5rem;
-        padding: 1.2rem 1.8rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 8px 16px -10px #94a3b8;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border: 1px solid #f1f5f9;
-    }
-    
-    .resumen-label {
-        color: #475569;
-        font-size: 1.1rem;
-        font-weight: 500;
-    }
-    
-    .resumen-number {
-        font-size: 2rem;
-        font-weight: 700;
-        color: #0f172a;
-    }
-    
-    .resumen-number.warning {
-        color: #dc2626;
-    }
-    
-    .progress-container {
-        background: white;
-        border-radius: 1.5rem;
-        padding: 1.2rem 1.8rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 8px 16px -10px #94a3b8;
-        border: 1px solid #f1f5f9;
-    }
-    
-    .progress-header {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 0.5rem;
-        color: #475569;
-        font-weight: 500;
-    }
-    
-    .progress-bar {
-        background: #e2e8f0;
-        height: 12px;
-        border-radius: 20px;
-        width: 100%;
-    }
-    
-    .progress-fill {
-        height: 12px;
-        background: #2563eb;
-        border-radius: 20px;
-        width: 0%;
-        transition: width 0.3s;
-    }
-    
-    .progress-fill.warning { background: #f59e0b; }
-    .progress-fill.danger { background: #dc2626; }
-    
-    .categoria {
-        background: white;
-        border-radius: 1.5rem;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 8px 16px -10px #94a3b8;
-        border: 1px solid #f1f5f9;
-    }
-    
-    .categoria-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 2px solid #e2e8f0;
-    }
-    
-    .categoria-nombre {
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: #0f172a;
-    }
-    
-    .categoria-total {
-        font-weight: 600;
-        color: #2563eb;
-    }
-    
-    .subcategoria {
-        padding: 1rem 0;
-        border-bottom: 1px solid #f1f5f9;
-    }
-    
-    .subcategoria:last-child {
-        border-bottom: none;
-    }
-    
-    .subcategoria-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 0.5rem;
-    }
-    
-    .subcategoria-nombre {
-        font-weight: 600;
-        color: #1e293b;
-    }
-    
-    .subcategoria-detalle {
-        font-size: 0.8rem;
-        color: #64748b;
-        margin-bottom: 0.5rem;
-        font-style: italic;
-    }
-    
-    .subcategoria-montos {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin: 0.5rem 0;
-        padding: 0.5rem 0;
-    }
-    
-    .subcategoria-gastado {
-        font-size: 1.3rem;
-        font-weight: 700;
-        color: #0f172a;
-    }
-    
-    .subcategoria-presupuesto {
-        color: #64748b;
-        font-size: 0.95rem;
-    }
-    
-    .mini-progress {
-        height: 8px;
-        background: #e2e8f0;
-        border-radius: 10px;
-        width: 100%;
-        margin: 0.5rem 0;
-    }
-    
-    .mini-fill {
-        height: 8px;
-        border-radius: 10px;
-        width: 0%;
-        transition: width 0.3s;
-    }
-    
-    .fill-green { background: #10b981; }
-    .fill-yellow { background: #f59e0b; }
-    .fill-red { background: #ef4444; }
-    
-    .status-badge {
-        padding: 0.3rem 1rem;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        display: inline-block;
-    }
-    
-    .status-good { background: #d1fae5; color: #047857; }
-    .status-warning { background: #fed7aa; color: #b45309; }
-    .status-danger { background: #fee2e2; color: #b91c1c; }
-    
-    .form-card {
-        background: white;
-        border-radius: 1.5rem;
-        padding: 1.5rem;
-        margin: 2rem 0;
-        box-shadow: 0 8px 16px -10px #94a3b8;
-        border: 1px solid #f1f5f9;
-    }
-    
-    .form-title {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
-        color: #0f172a;
-        font-weight: 600;
-        font-size: 1.1rem;
-    }
-    
-    .footer {
-        text-align: center;
-        color: #64748b;
-        font-size: 0.8rem;
-        margin-top: 2rem;
-        padding-top: 1.5rem;
-        border-top: 1px solid #e2e8f0;
-    }
-    
-    .stButton > button {
-        background: #2563eb !important;
-        color: white !important;
-        border: none !important;
-        padding: 0.8rem 2rem !important;
-        border-radius: 2rem !important;
-        font-weight: 600 !important;
-        font-size: 1rem !important;
-        width: 100% !important;
-        transition: all 0.2s !important;
-        box-shadow: 0 4px 12px -6px #1e40af !important;
-    }
-    
-    .stButton > button:hover {
-        background: #1d4ed8 !important;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 15px -6px #1e3a8a !important;
-    }
-    
-    .stButton > button[kind="secondary"] {
-        background: #ef4444 !important;
-    }
-    
-    .stButton > button[kind="secondary"]:hover {
-        background: #dc2626 !important;
-    }
-    
-    .stSelectbox > div > div {
-        border-radius: 1rem !important;
-        border: 1px solid #e2e8f0 !important;
-    }
-    
-    .stDateInput > div > div {
-        border-radius: 1rem !important;
-        border: 1px solid #e2e8f0 !important;
-    }
-    
-    .stNumberInput > div > div {
-        border-radius: 1rem !important;
-        border: 1px solid #e2e8f0 !important;
-    }
-    
-    .stTextInput > div > div {
-        border-radius: 1rem !important;
-        border: 1px solid #e2e8f0 !important;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# ============================================
 # INTERFAZ PRINCIPAL
 # ============================================
 
@@ -444,6 +320,21 @@ st.markdown("""
     </div>
 </div>
 """, unsafe_allow_html=True)
+
+# Botón de exportar a Excel
+col_exp1, col_exp2, col_exp3 = st.columns([1, 1, 1])
+with col_exp2:
+    excel_data = exportar_a_excel()
+    if excel_data:
+        st.download_button(
+            label="📥 Exportar a Excel",
+            data=excel_data,
+            file_name=f"gastos_{datetime.now().strftime('%Y%m')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True
+        )
+    else:
+        st.button("📥 Exportar a Excel", disabled=True, use_container_width=True)
 
 # Selector de mes
 col1, col2, col3 = st.columns([1, 3, 1])
@@ -511,13 +402,13 @@ st.markdown(f"""
         <span>${PRESUPUESTOS['Alimentación']['diario']:.2f}/día</span>
     </div>
     <div class="progress-bar">
-        <div class="progress-fill {fill_class}" style="width:{min(porcentaje, 100)}%"></div>
+        <div class="progress-fill {fill_class}" style="background-color:{'#dc2626' if porcentaje>100 else '#f59e0b' if porcentaje>80 else '#2563eb'}; height:12px; border-radius:20px; width:{min(porcentaje, 100)}%"></div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # ============================================
-# CATEGORÍAS (VERSIÓN SIMPLE QUE SÍ FUNCIONA)
+# CATEGORÍAS
 # ============================================
 for categoria, datos in PRESUPUESTOS.items():
     with st.expander(f"**{categoria}**", expanded=True):
@@ -531,12 +422,17 @@ for categoria, datos in PRESUPUESTOS.items():
                 if presupuesto['descripcion']:
                     st.caption(presupuesto['descripcion'])
             with col2:
-                st.markdown(f"**${gastado:,.2f}**")
-                st.markdown(f"de ${presupuesto['monto']:,.2f}")
+                st.markdown(f"**{format_money(gastado)}**")
+                st.markdown(f"de {format_money(presupuesto['monto'])}")
             
-            # Barra de progreso nativa de Streamlit
+            # Barra de progreso
             progreso = min(gastado / presupuesto['monto'], 1.0) if presupuesto['monto'] > 0 else 0
-            st.progress(progreso)
+            color = '#dc2626' if (gastado / presupuesto['monto']) > 1.0 else '#f59e0b' if (gastado / presupuesto['monto']) > 0.8 else '#10b981'
+            st.markdown(f"""
+            <div style="height:8px; background:#e2e8f0; border-radius:10px; margin:10px 0; width:100%;">
+                <div style="height:8px; background:{color}; border-radius:10px; width:{progreso*100}%;"></div>
+            </div>
+            """, unsafe_allow_html=True)
             st.divider()
 
 # ============================================
@@ -547,14 +443,14 @@ st.markdown("### ➕ Agregar / Corregir gasto")
 col1, col2 = st.columns(2)
 with col1:
     fecha = st.date_input("Fecha", datetime.now())
-    categoria_sel = st.selectbox("Categoría", list(PRESUPUESTOS.keys()))
+    categoria_sel = st.selectbox("Categoría", list(PRESUPUESTOS.keys()), key="cat_select")
     
 with col2:
     subcategorias = list(PRESUPUESTOS[categoria_sel]['subcategorias'].keys())
-    subcategoria_sel = st.selectbox("Subcategoría", subcategorias)
-    monto = st.number_input("Monto $ (positivo o negativo)", value=100, step=1)
+    subcategoria_sel = st.selectbox("Subcategoría", subcategorias, key="sub_select")
+    monto = st.number_input("Monto $ (positivo o negativo)", value=100, step=1, key="monto_input")
 
-descripcion = st.text_input("Descripción")
+descripcion = st.text_input("Descripción", key="desc_input")
 
 col_b1, col_b2, col_b3 = st.columns(3)
 with col_b1:
@@ -600,9 +496,9 @@ if gastos_mes:
         with cols[2]:
             st.write(row['subcategoria'])
         with cols[3]:
-            st.write(row['descripcion'][:20])
+            st.write(row['descripcion'][:20] + ('...' if len(row['descripcion']) > 20 else ''))
         with cols[4]:
-            st.write(f"**${row['monto']:,.2f}**")
+            st.write(f"**{format_money(row['monto'])}**")
 
 # ============================================
 # FOOTER
