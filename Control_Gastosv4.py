@@ -3,8 +3,12 @@ import pandas as pd
 from datetime import datetime
 import json
 import os
+import time
 
 st.set_page_config(page_title="💰 Control de Gastos", page_icon="💰", layout="centered")
+
+# FORZAR ACTUALIZACIÓN - ESTO ES NUEVO
+st.markdown(f"<!-- {time.time()} -->", unsafe_allow_html=True)
 
 st.title("💰 CONTROL DE GASTOS")
 st.caption("Ing. Roberto Villarreal")
@@ -38,22 +42,22 @@ st.progress(min(porcentaje/100, 1.0))
 
 st.subheader("➕ AGREGAR GASTO")
 
+# DICCIONARIO EXPLÍCITO
+opciones = {
+    "Alimentación": ["Desayuno", "Comida", "Cena"],
+    "Servicios": ["Internet", "Luz", "Agua"],  # ESTO ES LO CORRECTO
+    "Vivienda": ["Mantenimiento", "Transporte"]
+}
+
 with st.form("form_principal"):
     fecha = st.date_input("Fecha", datetime.now())
-    categoria = st.selectbox("Categoría", ["Alimentación", "Servicios", "Vivienda"], key="cat_1")
+    categoria = st.selectbox("Categoría", list(opciones.keys()))
     
-    # ===== ESTA ES LA PARTE CRÍTICA =====
-    opciones = {
-        "Alimentación": ["Desayuno", "Comida", "Cena"],
-        "Servicios": ["Internet", "Luz", "Agua"],  # <-- AHORA SÍ SON LAS CORRECTAS
-        "Vivienda": ["Mantenimiento", "Transporte"]
-    }
+    # SUBCATEGORÍA DIRECTA DEL DICCIONARIO
+    subcategoria = st.selectbox("Subcategoría", opciones[categoria])
     
-    subcategoria = st.selectbox("Subcategoría", opciones[categoria], key="sub_1")
-    # =====================================
-    
-    monto = st.number_input("Monto $", value=100, step=10, key="monto_1")
-    descripcion = st.text_input("Descripción", key="desc_1")
+    monto = st.number_input("Monto $", value=100, step=10)
+    descripcion = st.text_input("Descripción")
     
     if st.form_submit_button("💾 GUARDAR"):
         st.session_state.gastos.append({
