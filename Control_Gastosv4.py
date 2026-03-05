@@ -30,7 +30,6 @@ st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 PRESUPUESTOS = {
     'Alimentación': {
         'total': 7900,
-        'diario': 263.33,
         'subcategorias': {
             'Desayuno': {'monto': 75, 'descripcion': 'Huevos con manteca, queso, aguacate o jamón serrano'},
             'Comida': {'monto': 148.33, 'descripcion': 'Comida fuerte. Rib Eye, carnita asada'},
@@ -60,7 +59,7 @@ PRESUPUESTO_TOTAL = 13100
 ARCHIVO_DATOS = "gastos.json"
 
 # ============================================
-# CSS ORIGINAL (FONDO NEGRO)
+# CSS ORIGINAL
 # ============================================
 st.markdown("""
 <style>
@@ -399,7 +398,7 @@ def guardar_gastos(gastos):
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 # ============================================
-# FUNCIÓN PARA EXPORTAR A CSV (SIN OPENPYXL)
+# FUNCIÓN PARA EXPORTAR A CSV
 # ============================================
 def exportar_a_csv():
     if st.session_state.gastos:
@@ -523,7 +522,8 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# Barra de progreso
+# ===== BARRA DE PROGRESO CORREGIDA =====
+# Ahora muestra el presupuesto mensual en lugar del diario
 fill_class = ''
 if porcentaje > 100:
     fill_class = 'danger'
@@ -534,7 +534,7 @@ st.markdown(f"""
 <div class="progress-container">
     <div class="progress-header">
         <span>{porcentaje:.1f}% del presupuesto</span>
-        <span>${PRESUPUESTOS['Alimentación']['diario']:.2f}/día</span>
+        <span>Presupuesto: {format_money(PRESUPUESTO_TOTAL)}</span>
     </div>
     <div class="progress-bar">
         <div class="progress-fill {fill_class}" style="width:{min(porcentaje, 100)}%"></div>
@@ -543,7 +543,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ============================================
-# CATEGORÍAS (VERSIÓN SIMPLE QUE FUNCIONA)
+# CATEGORÍAS
 # ============================================
 for categoria, datos in PRESUPUESTOS.items():
     with st.expander(f"**{categoria}**", expanded=True):
@@ -560,7 +560,7 @@ for categoria, datos in PRESUPUESTOS.items():
                 st.markdown(f"**{format_money(gastado)}**")
                 st.markdown(f"de {format_money(presupuesto['monto'])}")
             
-            # Barra de progreso
+            # Barra de progreso individual
             progreso = min(gastado / presupuesto['monto'], 1.0) if presupuesto['monto'] > 0 else 0
             color = '#dc2626' if (gastado / presupuesto['monto']) > 1.0 else '#f59e0b' if (gastado / presupuesto['monto']) > 0.8 else '#10b981'
             st.markdown(f"""
