@@ -525,7 +525,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ============================================
-# CATEGORÍAS
+# CATEGORÍAS (VERSIÓN CORREGIDA - SIN HTML SUELTO)
 # ============================================
 for categoria, datos in PRESUPUESTOS.items():
     # Calcular gastos por subcategoría
@@ -535,6 +535,9 @@ for categoria, datos in PRESUPUESTOS.items():
                               if g['categoria'] == categoria and g['subcategoria'] == sub)
     
     with st.expander(f"**{categoria}**", expanded=True):
+        # Construir TODO el HTML de las subcategorías en UNA SOLA cadena
+        html_subcategorias = ""
+        
         for sub, presupuesto in datos['subcategorias'].items():
             gastado = gastos_cat.get(sub, 0)
             porcentaje_sub = (gastado / presupuesto['monto']) * 100 if presupuesto['monto'] > 0 else 0
@@ -553,8 +556,8 @@ for categoria, datos in PRESUPUESTOS.items():
                 status_class = 'status-warning'
                 status_text = 'Cuidado'
             
-            # Mostrar cada subcategoría con HTML seguro
-            st.markdown(f"""
+            # Agregar esta subcategoría al HTML acumulado
+            html_subcategorias += f"""
             <div class="subcategoria">
                 <div class="subcategoria-header">
                     <span class="subcategoria-nombre">{sub}</span>
@@ -569,7 +572,10 @@ for categoria, datos in PRESUPUESTOS.items():
                     <div class="mini-fill {fill_class}" style="width:{min(porcentaje_sub, 100)}%"></div>
                 </div>
             </div>
-            """, unsafe_allow_html=True)
+            """
+        
+        # Mostrar TODO el HTML de UNA SOLA VEZ
+        st.markdown(html_subcategorias, unsafe_allow_html=True)
 
 # ============================================
 # FORMULARIO PARA AGREGAR GASTOS
