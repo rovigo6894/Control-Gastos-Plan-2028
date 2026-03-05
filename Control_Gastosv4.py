@@ -25,7 +25,7 @@ hide_streamlit_style = """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # ============================================
-# CSS PROFESIONAL CON ALERTAS
+# CSS PROFESIONAL
 # ============================================
 st.markdown("""
 <style>
@@ -69,46 +69,42 @@ st.markdown("""
         text-align: center;
         box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
         transition: transform 0.2s;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .metric-card:hover {
-        transform: translateY(-5px);
     }
     
     .metric-card.exceeded {
         border: 2px solid #ef4444;
+        position: relative;
     }
     
-    .metric-card.exceeded::before {
+    .metric-card.exceeded::after {
         content: "⚠️ EXCEDIDO";
         position: absolute;
-        top: 0;
-        right: 0;
+        top: -10px;
+        right: 10px;
         background: #ef4444;
         color: white;
         padding: 0.2rem 0.5rem;
+        border-radius: 1rem;
         font-size: 0.7rem;
         font-weight: 600;
-        border-bottom-left-radius: 0.5rem;
     }
     
     .metric-card.warning {
         border: 2px solid #f59e0b;
+        position: relative;
     }
     
-    .metric-card.warning::before {
+    .metric-card.warning::after {
         content: "⚠️ ALERTA";
         position: absolute;
-        top: 0;
-        right: 0;
+        top: -10px;
+        right: 10px;
         background: #f59e0b;
         color: white;
         padding: 0.2rem 0.5rem;
+        border-radius: 1rem;
         font-size: 0.7rem;
         font-weight: 600;
-        border-bottom-left-radius: 0.5rem;
     }
     
     .metric-label {
@@ -171,6 +167,64 @@ st.markdown("""
         background: linear-gradient(90deg, #f59e0b, #fbbf24);
     }
     
+    /* ALERTAS CORREGIDAS */
+    .alert-container {
+        background: white;
+        border-radius: 1rem;
+        padding: 1rem;
+        margin: 1rem 0;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+    }
+    
+    .alert-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .alert-danger {
+        border-left: 4px solid #ef4444;
+    }
+    
+    .alert-warning {
+        border-left: 4px solid #f59e0b;
+    }
+    
+    .alert-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem;
+        margin: 0.3rem 0;
+        background: #f8f9fa;
+        border-radius: 0.5rem;
+    }
+    
+    .alert-item.exceeded {
+        background: #fee2e2;
+    }
+    
+    .alert-item.warning {
+        background: #fef3c7;
+    }
+    
+    .alert-name {
+        font-weight: 500;
+    }
+    
+    .alert-amount {
+        font-weight: 600;
+    }
+    
+    .alert-amount.exceeded {
+        color: #dc2626;
+    }
+    
+    .alert-amount.warning {
+        color: #d97706;
+    }
+    
     .form-container {
         background: white;
         border-radius: 1rem;
@@ -201,49 +255,6 @@ st.markdown("""
         box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
     }
     
-    /* ALERTAS */
-    .alert-box {
-        background: #fee2e2;
-        border-left: 4px solid #ef4444;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin: 1rem 0;
-        color: #991b1b;
-    }
-    
-    .alert-title {
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    
-    .alert-item {
-        display: flex;
-        justify-content: space-between;
-        padding: 0.3rem 0;
-        border-bottom: 1px solid rgba(239,68,68,0.2);
-    }
-    
-    .alert-item:last-child {
-        border-bottom: none;
-    }
-    
-    .alert-amount {
-        font-weight: 600;
-        color: #dc2626;
-    }
-    
-    .warning-box {
-        background: #fef3c7;
-        border-left: 4px solid #f59e0b;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin: 1rem 0;
-        color: #92400e;
-    }
-    
     .footer {
         text-align: center;
         color: rgba(255,255,255,0.7);
@@ -260,26 +271,9 @@ st.markdown("""
         border-radius: 0.5rem !important;
         padding: 0.5rem 1rem !important;
         font-weight: 600 !important;
-        transition: opacity 0.2s !important;
-    }
-    
-    .stButton > button:hover {
-        opacity: 0.9;
-    }
-    
-    .stTextInput > div > div {
-        border-radius: 0.5rem !important;
     }
     
     .stNumberInput > div > div {
-        border-radius: 0.5rem !important;
-    }
-    
-    .stDateInput > div > div {
-        border-radius: 0.5rem !important;
-    }
-    
-    .stSelectbox > div > div {
         border-radius: 0.5rem !important;
     }
     
@@ -288,26 +282,19 @@ st.markdown("""
         font-size: 0.8rem;
         margin-top: 0.2rem;
     }
-    
-    .success-text {
-        color: #10b981;
-        font-size: 0.8rem;
-        margin-top: 0.2rem;
-    }
 </style>
 """, unsafe_allow_html=True)
 
 # ============================================
-# DATOS DE PRESUPUESTOS
+# DATOS
 # ============================================
 PRESUPUESTOS = {
     'Alimentación': {
         'total': 7900,
         'subcategorias': {
-            'Desayuno': {'monto': 75, 'descripcion': 'Huevos con manteca, queso, aguacate o jamón serrano'},
-            'Comida': {'monto': 148.33, 'descripcion': 'Comida fuerte. Rib Eye, carnita asada'},
-            'Cena': {'monto': 40, 'descripcion': 'Ligero: aceitunas, plátano, frutos secos, quesadillas'},
-            'Snacks': {'monto': 100, 'descripcion': 'Botanas, frutas, etc.'}
+            'Desayuno': {'monto': 75, 'descripcion': 'Huevos con manteca, queso, aguacate'},
+            'Comida': {'monto': 148.33, 'descripcion': 'Comida fuerte. Rib Eye'},
+            'Cena': {'monto': 40, 'descripcion': 'Ligero: aceitunas, frutos secos'}
         }
     },
     'Servicios': {
@@ -315,24 +302,14 @@ PRESUPUESTOS = {
         'subcategorias': {
             'Internet': {'monto': 600, 'descripcion': 'Plan mensual'},
             'Luz': {'monto': 450, 'descripcion': 'CFE'},
-            'Agua': {'monto': 200, 'descripcion': 'Beneficio IPAM aplicado'},
-            'Celular': {'monto': 200, 'descripcion': 'Plan de datos'},
-            'Gas': {'monto': 100, 'descripcion': 'Tanque o natural'}
+            'Agua': {'monto': 200, 'descripcion': 'IPAM aplicado'}
         }
     },
     'Vivienda': {
         'total': 2150,
         'subcategorias': {
-            'Mantenimiento': {'monto': 1400, 'descripcion': 'Para que la casa siempre esté al cien'},
-            'Transporte': {'monto': 750, 'descripcion': 'Gasolina, Uber, camión'}
-        }
-    },
-    'Otros': {
-        'total': 500,
-        'subcategorias': {
-            'Entretenimiento': {'monto': 200, 'descripcion': 'Cine, streaming, etc.'},
-            'Salud': {'monto': 200, 'descripcion': 'Medicinas, consultas'},
-            'Varios': {'monto': 100, 'descripcion': 'Imprevistos'}
+            'Mantenimiento': {'monto': 1400, 'descripcion': 'Casa al cien'},
+            'Transporte': {'monto': 750, 'descripcion': 'Gasolina, Uber'}
         }
     }
 }
@@ -357,62 +334,58 @@ if 'gastos' not in st.session_state:
     st.session_state.gastos = cargar_gastos()
 
 # ============================================
-# FUNCIÓN PARA VERIFICAR ALERTAS
+# FUNCIÓN DE ALERTAS
 # ============================================
-def verificar_alertas():
-    alertas = []
-    advertencias = []
+def obtener_alertas():
+    excedidos = []
+    cerca_limite = []
     
     if not st.session_state.gastos:
-        return alertas, advertencias
+        return excedidos, cerca_limite
     
     df = pd.DataFrame(st.session_state.gastos)
     
-    # Verificar por categoría
-    for categoria, datos in PRESUPUESTOS.items():
-        gastos_cat = df[df['categoria'] == categoria]['monto'].sum() if not df.empty else 0
-        presupuesto_cat = datos['total']
-        
-        if gastos_cat > presupuesto_cat:
-            alertas.append({
+    for cat, datos in PRESUPUESTOS.items():
+        # Por categoría
+        gastos_cat = df[df['categoria'] == cat]['monto'].sum() if not df.empty else 0
+        if gastos_cat > datos['total']:
+            excedidos.append({
+                'nombre': cat,
                 'tipo': 'categoría',
-                'nombre': categoria,
                 'gastado': gastos_cat,
-                'presupuesto': presupuesto_cat,
-                'excedente': gastos_cat - presupuesto_cat
+                'limite': datos['total'],
+                'exceso': gastos_cat - datos['total']
             })
-        elif gastos_cat > presupuesto_cat * 0.8:
-            advertencias.append({
+        elif gastos_cat > datos['total'] * 0.8:
+            cerca_limite.append({
+                'nombre': cat,
                 'tipo': 'categoría',
-                'nombre': categoria,
                 'gastado': gastos_cat,
-                'presupuesto': presupuesto_cat,
-                'restante': presupuesto_cat - gastos_cat
+                'limite': datos['total'],
+                'restante': datos['total'] - gastos_cat
             })
         
-        # Verificar por subcategoría
-        for sub, datos_sub in datos['subcategorias'].items():
-            gastos_sub = df[(df['categoria'] == categoria) & (df['subcategoria'] == sub)]['monto'].sum() if not df.empty else 0
-            presupuesto_sub = datos_sub['monto']
-            
-            if gastos_sub > presupuesto_sub:
-                alertas.append({
+        # Por subcategoría
+        for sub, sub_data in datos['subcategorias'].items():
+            gastos_sub = df[(df['categoria'] == cat) & (df['subcategoria'] == sub)]['monto'].sum() if not df.empty else 0
+            if gastos_sub > sub_data['monto']:
+                excedidos.append({
+                    'nombre': f"{cat} - {sub}",
                     'tipo': 'subcategoría',
-                    'nombre': f"{categoria} - {sub}",
                     'gastado': gastos_sub,
-                    'presupuesto': presupuesto_sub,
-                    'excedente': gastos_sub - presupuesto_sub
+                    'limite': sub_data['monto'],
+                    'exceso': gastos_sub - sub_data['monto']
                 })
-            elif gastos_sub > presupuesto_sub * 0.8:
-                advertencias.append({
+            elif gastos_sub > sub_data['monto'] * 0.8:
+                cerca_limite.append({
+                    'nombre': f"{cat} - {sub}",
                     'tipo': 'subcategoría',
-                    'nombre': f"{categoria} - {sub}",
                     'gastado': gastos_sub,
-                    'presupuesto': presupuesto_sub,
-                    'restante': presupuesto_sub - gastos_sub
+                    'limite': sub_data['monto'],
+                    'restante': sub_data['monto'] - gastos_sub
                 })
     
-    return alertas, advertencias
+    return excedidos, cerca_limite
 
 # ============================================
 # TÍTULO
@@ -421,38 +394,40 @@ st.markdown('<div class="main-title">💰 CONTROL DE GASTOS PRO</div>', unsafe_a
 st.markdown('<div class="sub-title">Ing. Roberto Villarreal · Plan Maestro 2026</div>', unsafe_allow_html=True)
 
 # ============================================
-# ALERTAS
+# MOSTRAR ALERTAS (CORREGIDO)
 # ============================================
-alertas, advertencias = verificar_alertas()
+excedidos, cerca_limite = obtener_alertas()
 
-if alertas:
-    alert_html = '<div class="alert-box">'
-    alert_html += '<div class="alert-title">⚠️ ¡PRESUPUESTOS EXCEDIDOS!</div>'
-    for alerta in alertas:
-        alert_html += f'''
-        <div class="alert-item">
-            <span>{alerta['nombre']}</span>
-            <span class="alert-amount">+${alerta['excedente']:,.0f} (${alerta['gastado']:,.0f}/${alerta['presupuesto']:,.0f})</span>
+if excedidos:
+    st.markdown('<div class="alert-container alert-danger">', unsafe_allow_html=True)
+    st.markdown('<div class="alert-title">⚠️ PRESUPUESTOS EXCEDIDOS</div>', unsafe_allow_html=True)
+    
+    for item in excedidos:
+        st.markdown(f"""
+        <div class="alert-item exceeded">
+            <span class="alert-name">{item['nombre']}</span>
+            <span class="alert-amount exceeded">+${item['exceso']:,.0f} (${item['gastado']:,.0f}/${item['limite']:,.0f})</span>
         </div>
-        '''
-    alert_html += '</div>'
-    st.markdown(alert_html, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
-if advertencias:
-    warning_html = '<div class="warning-box">'
-    warning_html += '<div class="alert-title">⚠️ PRESUPUESTOS CERCANOS AL LÍMITE (80%)</div>'
-    for adv in advertencias:
-        warning_html += f'''
-        <div class="alert-item">
-            <span>{adv['nombre']}</span>
-            <span>Te quedan ${adv['restante']:,.0f} (${adv['gastado']:,.0f}/${adv['presupuesto']:,.0f})</span>
+if cerca_limite:
+    st.markdown('<div class="alert-container alert-warning">', unsafe_allow_html=True)
+    st.markdown('<div class="alert-title">⚠️ CERCA DEL LÍMITE (80%)</div>', unsafe_allow_html=True)
+    
+    for item in cerca_limite:
+        st.markdown(f"""
+        <div class="alert-item warning">
+            <span class="alert-name">{item['nombre']}</span>
+            <span class="alert-amount warning">Te quedan ${item['restante']:,.0f} (${item['gastado']:,.0f}/{item['limite']:,.0f})</span>
         </div>
-        '''
-    warning_html += '</div>'
-    st.markdown(warning_html, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ============================================
-# MÉTRICAS CON ALERTAS
+# MÉTRICAS
 # ============================================
 gastos_mes = [g for g in st.session_state.gastos]
 total_gastado = sum(g['monto'] for g in gastos_mes) if gastos_mes else 0
@@ -461,12 +436,12 @@ porcentaje = (total_gastado / PRESUPUESTO_TOTAL) * 100
 
 col1, col2, col3 = st.columns(3)
 
-# Determinar clase para tarjetas
-clase_total = ""
+# Clase para tarjeta de gastado
+clase_gastado = ""
 if total_gastado > PRESUPUESTO_TOTAL:
-    clase_total = "exceeded"
+    clase_gastado = "exceeded"
 elif total_gastado > PRESUPUESTO_TOTAL * 0.8:
-    clase_total = "warning"
+    clase_gastado = "warning"
 
 with col1:
     st.markdown(f"""
@@ -479,10 +454,10 @@ with col1:
 
 with col2:
     st.markdown(f"""
-    <div class="metric-card {clase_total}">
+    <div class="metric-card {clase_gastado}">
         <div class="metric-label">💸 GASTADO</div>
         <div class="metric-value">${total_gastado:,.0f}</div>
-        <div class="metric-delta {'negative' if porcentaje > 100 else ''}">{porcentaje:.1f}% del total</div>
+        <div class="metric-delta {'negative' if porcentaje > 100 else ''}">{porcentaje:.1f}%</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -496,7 +471,7 @@ with col3:
     """, unsafe_allow_html=True)
 
 # ============================================
-# BARRA DE PROGRESO CON ALERTAS
+# BARRA DE PROGRESO
 # ============================================
 clase_progress = ""
 if porcentaje > 100:
@@ -528,126 +503,60 @@ with st.form("nuevo_gasto"):
     with col1:
         fecha = st.date_input("📅 Fecha", datetime.now())
         categoria = st.selectbox("📁 Categoría", list(PRESUPUESTOS.keys()))
-        
         subcategorias = list(PRESUPUESTOS[categoria]['subcategorias'].keys())
         subcategoria = st.selectbox("📂 Subcategoría", subcategorias)
-        
-        descripcion_sub = PRESUPUESTOS[categoria]['subcategorias'][subcategoria]['descripcion']
-        if descripcion_sub:
-            st.markdown(f'<div class="subcategoria-info">ℹ️ {descripcion_sub}</div>', unsafe_allow_html=True)
     
     with col2:
-        monto = st.number_input("💰 Monto $ (usa negativo para corregir)", value=100, step=10)
-        descripcion = st.text_input("📝 Descripción adicional", placeholder="Opcional")
-        
+        monto = st.number_input("💰 Monto $ (negativo para corregir)", value=100, step=10)
+        descripcion = st.text_input("📝 Descripción")
         if monto < 0:
-            st.markdown('<div class="warning-text">⚠️ Estás restando dinero (corrección)</div>', unsafe_allow_html=True)
+            st.markdown('<div class="warning-text">⚠️ Corrección (restando)</div>', unsafe_allow_html=True)
     
-    col_btn1, col_btn2, col_btn3 = st.columns(3)
-    with col_btn2:
-        submitted = st.form_submit_button("💾 GUARDAR GASTO", use_container_width=True)
-        
-        if submitted:
-            if fecha and categoria and subcategoria and monto != 0:
-                st.session_state.gastos.append({
-                    'fecha': fecha.strftime('%Y-%m-%d'),
-                    'categoria': categoria,
-                    'subcategoria': subcategoria,
-                    'descripcion': descripcion if descripcion else descripcion_sub,
-                    'monto': monto
-                })
-                guardar_gastos(st.session_state.gastos)
-                st.success("✅ Gasto guardado correctamente")
-                st.rerun()
-            else:
-                st.error("❌ Completa todos los campos")
+    if st.form_submit_button("💾 GUARDAR", use_container_width=True):
+        if fecha and categoria and subcategoria and monto != 0:
+            st.session_state.gastos.append({
+                'fecha': fecha.strftime('%Y-%m-%d'),
+                'categoria': categoria,
+                'subcategoria': subcategoria,
+                'descripcion': descripcion,
+                'monto': monto
+            })
+            guardar_gastos(st.session_state.gastos)
+            st.success("✅ Gasto guardado")
+            st.rerun()
 
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ============================================
-# RESUMEN POR CATEGORÍA CON ALERTAS
+# RESUMEN
 # ============================================
 if st.session_state.gastos:
     df = pd.DataFrame(st.session_state.gastos)
     
     st.markdown('<div class="expenses-table">', unsafe_allow_html=True)
-    st.markdown('<div class="form-title">📊 RESUMEN POR CATEGORÍA</div>', unsafe_allow_html=True)
+    st.markdown('<div class="form-title">📊 RESUMEN</div>', unsafe_allow_html=True)
     
-    for categoria, datos in PRESUPUESTOS.items():
-        gastos_cat = df[df['categoria'] == categoria]
-        total_cat = gastos_cat['monto'].sum() if not gastos_cat.empty else 0
-        presupuesto_cat = datos['total']
-        porcentaje_cat = (total_cat / presupuesto_cat) * 100 if presupuesto_cat > 0 else 0
-        
-        # Determinar clase para la categoría
-        clase_cat = ""
-        if total_cat > presupuesto_cat:
-            clase_cat = "exceeded"
-        elif total_cat > presupuesto_cat * 0.8:
-            clase_cat = "warning"
+    for cat, datos in PRESUPUESTOS.items():
+        gastos_cat = df[df['categoria'] == cat]['monto'].sum() if not df.empty else 0
+        porcentaje_cat = (gastos_cat / datos['total']) * 100
         
         col1, col2 = st.columns([3, 1])
         with col1:
-            st.markdown(f"**{categoria}** { '⚠️' if clase_cat else ''}")
-            # Mostrar subcategorías
+            st.markdown(f"**{cat}**")
             for sub in datos['subcategorias'].keys():
-                gastos_sub = gastos_cat[gastos_cat['subcategoria'] == sub]['monto'].sum() if not gastos_cat.empty else 0
+                gastos_sub = df[(df['categoria'] == cat) & (df['subcategoria'] == sub)]['monto'].sum() if not df.empty else 0
                 if gastos_sub != 0:
-                    presupuesto_sub = datos['subcategorias'][sub]['monto']
-                    clase_sub = ""
-                    if gastos_sub > presupuesto_sub:
-                        clase_sub = "🔴 "
-                    elif gastos_sub > presupuesto_sub * 0.8:
-                        clase_sub = "🟡 "
-                    st.markdown(f"&nbsp;&nbsp;• {clase_sub}{sub}: ${gastos_sub:,.2f} / ${presupuesto_sub:,.2f}")
+                    limite_sub = datos['subcategorias'][sub]['monto']
+                    emoji = "🔴" if gastos_sub > limite_sub else "🟡" if gastos_sub > limite_sub * 0.8 else "🟢"
+                    st.markdown(f"&nbsp;&nbsp;{emoji} {sub}: ${gastos_sub:,.0f}/${limite_sub:,.0f}")
         
         with col2:
-            st.markdown(f"**${total_cat:,.0f}**")
+            st.markdown(f"**${gastos_cat:,.0f}**")
             st.markdown(f"*{porcentaje_cat:.1f}%*")
-        
-        # Barra de progreso por categoría con alerta
-        color = '#ef4444' if porcentaje_cat > 100 else '#f59e0b' if porcentaje_cat > 80 else '#10b981'
-        st.markdown(f"""
-        <div style="height: 8px; background: #e0e0e0; border-radius: 4px; margin: 10px 0;">
-            <div style="height: 8px; width: {min(porcentaje_cat, 100)}%; background: {color}; border-radius: 4px;"></div>
-        </div>
-        """, unsafe_allow_html=True)
         
         st.divider()
     
     st.markdown('</div>', unsafe_allow_html=True)
-
-# ============================================
-# GRÁFICA
-# ============================================
-if st.session_state.gastos:
-    df = pd.DataFrame(st.session_state.gastos)
-    
-    st.markdown('<div class="expenses-table">', unsafe_allow_html=True)
-    st.markdown('<div class="form-title">📊 DISTRIBUCIÓN POR CATEGORÍA</div>', unsafe_allow_html=True)
-    
-    cat_sum = df.groupby('categoria')['monto'].sum().reset_index()
-    fig = px.pie(cat_sum, values='monto', names='categoria', 
-                 color_discrete_sequence=px.colors.sequential.Blues_r)
-    fig.update_layout(
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        font_family="Inter",
-        showlegend=True,
-        height=400
-    )
-    st.plotly_chart(fig, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# ============================================
-# BOTONES
-# ============================================
-col1, col2, col3 = st.columns(3)
-with col2:
-    if st.button("🗑️ REINICIAR DATOS"):
-        st.session_state.gastos = []
-        guardar_gastos([])
-        st.rerun()
 
 # ============================================
 # FOOTER
@@ -655,7 +564,7 @@ with col2:
 st.markdown("""
 <div class="footer">
     <p>📧 contacto@optipension73.com · 📱 871 579 1810</p>
-    <p>⚡ Versión PRO · Alertas automáticas · Correcciones negativas</p>
+    <p>⚡ Versión PRO · Alertas automáticas</p>
     <p>© 2026 · OptiPensión 73</p>
 </div>
 """, unsafe_allow_html=True)
