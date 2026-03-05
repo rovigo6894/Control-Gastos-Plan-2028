@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 from datetime import datetime
 import json
 import os
@@ -26,30 +25,184 @@ hide_streamlit_style = """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # ============================================
+# CSS ELEGANTE
+# ============================================
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    * {
+        font-family: 'Inter', sans-serif;
+    }
+    
+    .stApp {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .main-title {
+        text-align: center;
+        color: white;
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .sub-title {
+        text-align: center;
+        color: rgba(255,255,255,0.9);
+        font-size: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .metric-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin: 2rem 0;
+    }
+    
+    .metric-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+        transition: transform 0.2s;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .metric-label {
+        color: #666;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .metric-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #333;
+        margin: 0.5rem 0;
+    }
+    
+    .metric-delta {
+        font-size: 0.9rem;
+        color: #10b981;
+    }
+    
+    .metric-delta.negative {
+        color: #ef4444;
+    }
+    
+    .progress-container {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin: 2rem 0;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+    }
+    
+    .progress-bar {
+        height: 20px;
+        background: #e0e0e0;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        border-radius: 10px;
+        transition: width 0.3s;
+    }
+    
+    .form-container {
+        background: white;
+        border-radius: 1rem;
+        padding: 2rem;
+        margin: 2rem 0;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+    }
+    
+    .form-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        color: #333;
+    }
+    
+    .alert-container {
+        background: white;
+        border-radius: 1rem;
+        padding: 1rem;
+        margin: 1rem 0;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+    }
+    
+    .alert-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #ef4444;
+    }
+    
+    .alert-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem;
+        margin: 0.3rem 0;
+        background: #f8f9fa;
+        border-radius: 0.5rem;
+    }
+    
+    .expenses-table {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin: 2rem 0;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+    }
+    
+    .footer {
+        text-align: center;
+        color: rgba(255,255,255,0.7);
+        font-size: 0.8rem;
+        margin-top: 3rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(255,255,255,0.2);
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# ============================================
 # DATOS DE PRESUPUESTOS
 # ============================================
 PRESUPUESTOS = {
     'Alimentación': {
         'total': 7900,
         'subcategorias': {
-            'Desayuno': {'monto': 75, 'descripcion': 'Huevos con manteca, queso, aguacate'},
-            'Comida': {'monto': 148.33, 'descripcion': 'Comida fuerte. Rib Eye'},
-            'Cena': {'monto': 40, 'descripcion': 'Ligero: aceitunas, frutos secos'}
+            'Desayuno': 75,
+            'Comida': 148.33,
+            'Cena': 40
         }
     },
     'Servicios': {
         'total': 1550,
         'subcategorias': {
-            'Internet': {'monto': 600, 'descripcion': 'Plan mensual'},
-            'Luz': {'monto': 450, 'descripcion': 'CFE'},
-            'Agua': {'monto': 200, 'descripcion': 'IPAM aplicado'}
+            'Internet': 600,
+            'Luz': 450,
+            'Agua': 200
         }
     },
     'Vivienda': {
         'total': 2150,
         'subcategorias': {
-            'Mantenimiento': {'monto': 1400, 'descripcion': 'Casa al cien'},
-            'Transporte': {'monto': 750, 'descripcion': 'Gasolina, Uber'}
+            'Mantenimiento': 1400,
+            'Transporte': 750
         }
     }
 }
@@ -68,22 +221,19 @@ def guardar_gastos(gastos):
         json.dump(gastos, f, indent=2)
 
 # ============================================
-# INICIALIZAR SESSION STATE
+# INICIALIZAR
 # ============================================
 if 'gastos' not in st.session_state:
     st.session_state.gastos = cargar_gastos()
-
-# ============================================
-# FUNCIONES DE AYUDA
-# ============================================
-def obtener_subcategorias(categoria):
-    return list(PRESUPUESTOS[categoria]['subcategorias'].keys())
+    
+if 'categoria_actual' not in st.session_state:
+    st.session_state.categoria_actual = list(PRESUPUESTOS.keys())[0]
 
 # ============================================
 # TÍTULO
 # ============================================
-st.title("💰 CONTROL DE GASTOS PRO")
-st.caption("Ing. Roberto Villarreal · Plan Maestro 2026")
+st.markdown('<div class="main-title">💰 CONTROL DE GASTOS PRO</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Ing. Roberto Villarreal · Plan Maestro 2026</div>', unsafe_allow_html=True)
 
 # ============================================
 # MÉTRICAS
@@ -96,82 +246,114 @@ porcentaje = (total_gastado / PRESUPUESTO_TOTAL) * 100
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.metric("💰 PRESUPUESTO", f"${PRESUPUESTO_TOTAL:,.0f}")
+    st.markdown(f"""
+    <div class="metric-card">
+        <div class="metric-label">💰 PRESUPUESTO</div>
+        <div class="metric-value">${PRESUPUESTO_TOTAL:,.0f}</div>
+        <div class="metric-delta">Mensual</div>
+    </div>
+    """, unsafe_allow_html=True)
+
 with col2:
-    st.metric("💸 GASTADO", f"${total_gastado:,.0f}", f"{porcentaje:.1f}%")
+    delta_class = "metric-delta negative" if porcentaje > 100 else "metric-delta"
+    st.markdown(f"""
+    <div class="metric-card">
+        <div class="metric-label">💸 GASTADO</div>
+        <div class="metric-value">${total_gastado:,.0f}</div>
+        <div class="{delta_class}">{porcentaje:.1f}%</div>
+    </div>
+    """, unsafe_allow_html=True)
+
 with col3:
-    delta_color = "inverse" if restante < 0 else "normal"
-    st.metric("⚖️ RESTANTE", f"${restante:,.0f}", delta_color=delta_color)
+    delta_class = "metric-delta negative" if restante < 0 else "metric-delta"
+    st.markdown(f"""
+    <div class="metric-card">
+        <div class="metric-label">⚖️ RESTANTE</div>
+        <div class="metric-value">${restante:,.0f}</div>
+        <div class="{delta_class}">Disponible</div>
+    </div>
+    """, unsafe_allow_html=True)
 
 # ============================================
 # BARRA DE PROGRESO
 # ============================================
-st.progress(min(porcentaje/100, 1.0), text=f"Progreso: {porcentaje:.1f}%")
+st.markdown(f"""
+<div class="progress-container">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+        <span>Progreso mensual</span>
+        <span>{porcentaje:.1f}%</span>
+    </div>
+    <div class="progress-bar">
+        <div class="progress-fill" style="width: {min(porcentaje, 100)}%;"></div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 # ============================================
-# FORMULARIO CON SUBCATEGORÍAS DINÁMICAS
+# FORMULARIO CON SUBCATEGORÍAS CORREGIDO
 # ============================================
-st.subheader("➕ AGREGAR / CORREGIR GASTO")
+st.markdown('<div class="form-container">', unsafe_allow_html=True)
+st.markdown('<div class="form-title">➕ AGREGAR / CORREGIR GASTO</div>', unsafe_allow_html=True)
 
 with st.form("nuevo_gasto"):
     col1, col2 = st.columns(2)
     
     with col1:
         fecha = st.date_input("📅 Fecha", datetime.now())
+        # Categoría - al cambiar, se actualiza la sesión
         categoria = st.selectbox(
-            "📁 Categoría", 
-            list(PRESUPUESTOS.keys()),
-            key='categoria_form'
+            "📁 Categoría",
+            list(PRESUPUESTOS.keys())
         )
     
     with col2:
-        monto = st.number_input("💰 Monto $ (negativo para corregir)", value=100, step=10)
+        monto = st.number_input("💰 Monto $", value=100, step=10)
         descripcion = st.text_input("📝 Descripción")
     
-    # SUBCATEGORÍAS DINÁMICAS - Se actualizan con cada cambio de categoría
-    subcategorias = obtener_subcategorias(categoria)
-    subcategoria = st.selectbox("📂 Subcategoría", subcategorias, key='subcategoria_form')
+    # SUBCATEGORÍAS - Se actualizan BASADO EN LA CATEGORÍA SELECCIONADA
+    subcategorias = list(PRESUPUESTOS[categoria]['subcategorias'].keys())
+    subcategoria = st.selectbox("📂 Subcategoría", subcategorias)
     
-    # Mostrar descripción de la subcategoría seleccionada
-    desc_sub = PRESUPUESTOS[categoria]['subcategorias'][subcategoria]['descripcion']
-    if desc_sub:
-        st.info(f"ℹ️ {desc_sub}")
+    # Mostrar límite de la subcategoría
+    limite_sub = PRESUPUESTOS[categoria]['subcategorias'][subcategoria]
+    st.caption(f"Límite: ${limite_sub:,.2f}")
     
     if monto < 0:
-        st.warning("⚠️ Estás restando dinero (corrección)")
+        st.warning("⚠️ Número negativo - Esto RESTARÁ del presupuesto")
     
-    if st.form_submit_button("💾 GUARDAR GASTO", use_container_width=True):
+    if st.form_submit_button("💾 GUARDAR", use_container_width=True):
         if fecha and categoria and subcategoria and monto != 0:
-            nuevo_gasto = {
+            st.session_state.gastos.append({
                 'fecha': fecha.strftime('%Y-%m-%d'),
                 'categoria': categoria,
                 'subcategoria': subcategoria,
-                'descripcion': descripcion if descripcion else desc_sub,
+                'descripcion': descripcion,
                 'monto': monto
-            }
-            st.session_state.gastos.append(nuevo_gasto)
+            })
             guardar_gastos(st.session_state.gastos)
-            st.success("✅ Gasto guardado correctamente")
+            st.success("✅ Gasto guardado")
             st.rerun()
+
+st.markdown('</div>', unsafe_allow_html=True)
 
 # ============================================
 # ALERTAS
 # ============================================
 if st.session_state.gastos:
     df = pd.DataFrame(st.session_state.gastos)
-    alertas = []
+    excedidos = []
     
     for cat, datos in PRESUPUESTOS.items():
         gastos_cat = df[df['categoria'] == cat]['monto'].sum() if not df.empty else 0
         if gastos_cat > datos['total']:
-            alertas.append(f"🔴 {cat}: +${gastos_cat - datos['total']:,.0f} (${gastos_cat:,.0f}/${datos['total']:,.0f})")
-        elif gastos_cat > datos['total'] * 0.8:
-            alertas.append(f"🟡 {cat}: Te quedan ${datos['total'] - gastos_cat:,.0f} (${gastos_cat:,.0f}/${datos['total']:,.0f})")
+            excedidos.append(f"🔴 {cat}: +${gastos_cat - datos['total']:,.0f} (${gastos_cat:,.0f}/${datos['total']:,.0f})")
     
-    if alertas:
-        with st.expander("⚠️ ALERTAS DE PRESUPUESTO", expanded=True):
-            for alerta in alertas:
-                st.write(alerta)
+    if excedidos:
+        st.markdown('<div class="alert-container">', unsafe_allow_html=True)
+        st.markdown('<div class="alert-title">⚠️ ALERTAS</div>', unsafe_allow_html=True)
+        for item in excedidos:
+            st.markdown(f'<div class="alert-item">{item}</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # ============================================
 # GRÁFICAS
@@ -179,66 +361,58 @@ if st.session_state.gastos:
 if st.session_state.gastos:
     df = pd.DataFrame(st.session_state.gastos)
     
-    tab1, tab2 = st.tabs(["📊 Por Categoría", "📈 Evolución"])
+    st.markdown('<div class="expenses-table">', unsafe_allow_html=True)
+    st.markdown('<div class="form-title">📊 DISTRIBUCIÓN</div>', unsafe_allow_html=True)
     
-    with tab1:
-        cat_sum = df.groupby('categoria')['monto'].sum().reset_index()
-        fig = px.pie(cat_sum, values='monto', names='categoria')
-        st.plotly_chart(fig, use_container_width=True)
-    
-    with tab2:
-        df['fecha'] = pd.to_datetime(df['fecha'])
-        df_time = df.groupby('fecha')['monto'].sum().reset_index().sort_values('fecha')
-        fig = px.line(df_time, x='fecha', y='monto', markers=True)
-        st.plotly_chart(fig, use_container_width=True)
+    cat_sum = df.groupby('categoria')['monto'].sum().reset_index()
+    fig = px.pie(cat_sum, values='monto', names='categoria')
+    st.plotly_chart(fig, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ============================================
 # DETALLE POR CATEGORÍA
 # ============================================
 if st.session_state.gastos:
-    st.subheader("📋 DETALLE POR CATEGORÍA")
+    st.markdown('<div class="expenses-table">', unsafe_allow_html=True)
+    st.markdown('<div class="form-title">📋 DETALLE</div>', unsafe_allow_html=True)
     
     for cat, datos in PRESUPUESTOS.items():
         gastos_cat = df[df['categoria'] == cat]['monto'].sum() if not df.empty else 0
         
         with st.expander(f"{cat} - ${gastos_cat:,.0f} / ${datos['total']:,.0f}"):
-            # Barra de progreso
-            progreso_cat = min(gastos_cat / datos['total'], 1.0)
-            st.progress(progreso_cat)
-            
-            # Subcategorías
-            for sub, sub_data in datos['subcategorias'].items():
+            for sub, limite in datos['subcategorias'].items():
                 gastos_sub = df[(df['categoria'] == cat) & (df['subcategoria'] == sub)]['monto'].sum() if not df.empty else 0
-                progreso_sub = min(gastos_sub / sub_data['monto'], 1.0)
+                progreso = min(gastos_sub / limite, 1.0)
                 
                 col1, col2 = st.columns([3, 1])
                 with col1:
                     st.write(f"**{sub}**")
-                    if sub_data['descripcion']:
-                        st.caption(sub_data['descripcion'])
                 with col2:
-                    st.write(f"${gastos_sub:,.0f} / ${sub_data['monto']:,.0f}")
+                    st.write(f"${gastos_sub:,.0f} / ${limite:,.0f}")
                 
-                st.progress(progreso_sub)
+                # Barra de progreso
+                st.progress(progreso)
                 st.divider()
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ============================================
 # ÚLTIMOS GASTOS
 # ============================================
 if st.session_state.gastos:
-    st.subheader("📋 ÚLTIMOS 10 GASTOS")
+    st.markdown('<div class="expenses-table">', unsafe_allow_html=True)
+    st.markdown('<div class="form-title">📋 ÚLTIMOS</div>', unsafe_allow_html=True)
+    
     df_show = pd.DataFrame(st.session_state.gastos[-10:][::-1])
-    df_show['fecha'] = pd.to_datetime(df_show['fecha']).dt.strftime('%d/%m/%Y')
-    df_show['monto'] = df_show['monto'].apply(lambda x: f"${x:,.2f}")
-    st.dataframe(df_show[['fecha', 'categoria', 'subcategoria', 'descripcion', 'monto']], 
-                 use_container_width=True, hide_index=True)
+    st.dataframe(df_show, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ============================================
 # BOTÓN REINICIAR
 # ============================================
 col1, col2, col3 = st.columns(3)
 with col2:
-    if st.button("🗑️ REINICIAR DATOS", use_container_width=True):
+    if st.button("🗑️ REINICIAR", use_container_width=True):
         st.session_state.gastos = []
         guardar_gastos([])
         st.rerun()
@@ -246,11 +420,10 @@ with col2:
 # ============================================
 # FOOTER
 # ============================================
-st.divider()
 st.markdown("""
-<div style='text-align: center; color: #666;'>
+<div class="footer">
     <p>📧 contacto@optipension73.com · 📱 871 579 1810</p>
-    <p>⚡ Versión PRO · Subcategorías dinámicas · Alertas automáticas</p>
+    <p>⚡ Versión PRO · Subcategorías dinámicas</p>
     <p>© 2026 · OptiPensión 73</p>
 </div>
 """, unsafe_allow_html=True)
