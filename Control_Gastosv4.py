@@ -3,15 +3,30 @@ import pandas as pd
 from datetime import datetime
 import json
 import os
-import time
 
 st.set_page_config(page_title="💰 Control de Gastos", page_icon="💰", layout="centered")
 
-# FORZAR ACTUALIZACIÓN - ESTO ES NUEVO
-st.markdown(f"<!-- {time.time()} -->", unsafe_allow_html=True)
+# Ocultar menús
+hide_streamlit_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            header {visibility: hidden;}
+            </style>
+            """
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 st.title("💰 CONTROL DE GASTOS")
 st.caption("Ing. Roberto Villarreal")
+
+# ============================================
+# DATOS - ÚNICO LUGAR DONDE SE DEFINEN
+# ============================================
+CATEGORIAS = {
+    "Alimentación": ["Desayuno", "Comida", "Cena"],
+    "Servicios": ["Internet", "Luz", "Agua"],   # <--- ESTÁN CORRECTAS AQUÍ
+    "Vivienda": ["Mantenimiento", "Transporte"]
+}
 
 PRESUPUESTO_TOTAL = 13100
 ARCHIVO_DATOS = "gastos.json"
@@ -29,6 +44,9 @@ def guardar_gastos(gastos):
 if 'gastos' not in st.session_state:
     st.session_state.gastos = cargar_gastos()
 
+# ============================================
+# MÉTRICAS
+# ============================================
 total = sum(g['monto'] for g in st.session_state.gastos) if st.session_state.gastos else 0
 restante = PRESUPUESTO_TOTAL - total
 porcentaje = (total / PRESUPUESTO_TOTAL) * 100
@@ -40,21 +58,17 @@ col3.metric("RESTANTE", f"${restante:,.0f}")
 
 st.progress(min(porcentaje/100, 1.0))
 
+# ============================================
+# FORMULARIO
+# ============================================
 st.subheader("➕ AGREGAR GASTO")
 
-# DICCIONARIO EXPLÍCITO
-opciones = {
-    "Alimentación": ["Desayuno", "Comida", "Cena"],
-    "Servicios": ["Internet", "Luz", "Agua"],  # ESTO ES LO CORRECTO
-    "Vivienda": ["Mantenimiento", "Transporte"]
-}
-
-with st.form("form_principal"):
+with st.form("formulario"):
     fecha = st.date_input("Fecha", datetime.now())
-    categoria = st.selectbox("Categoría", list(opciones.keys()))
+    categoria = st.selectbox("Categoría", list(CATEGORIAS.keys()))
     
-    # SUBCATEGORÍA DIRECTA DEL DICCIONARIO
-    subcategoria = st.selectbox("Subcategoría", opciones[categoria])
+    # ESTA LÍNEA USA EL DICCIONARIO - ES LA CLAVE
+    subcategoria = st.selectbox("Subcategoría", CATEGORIAS[categoria])
     
     monto = st.number_input("Monto $", value=100, step=10)
     descripcion = st.text_input("Descripción")
@@ -70,12 +84,18 @@ with st.form("form_principal"):
         guardar_gastos(st.session_state.gastos)
         st.rerun()
 
+# ============================================
+# MOSTRAR GASTOS
+# ============================================
 if st.session_state.gastos:
-    st.subheader("📋 GASTOS")
+    st.subheader("📋 GASTOS RECIENTES")
     df = pd.DataFrame(st.session_state.gastos[-10:][::-1])
     st.dataframe(df, use_container_width=True)
 
-if st.button("🗑️ REINICIAR"):
+# ============================================
+# REINICIAR
+# ============================================
+if st.button("🗑️ REINICIAR TODO"):
     st.session_state.gastos = []
     guardar_gastos([])
     st.rerun()
