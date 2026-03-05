@@ -4,17 +4,11 @@ from datetime import datetime
 import json
 import os
 
-# ============================================
-# CONFIGURACIÓN
-# ============================================
 st.set_page_config(page_title="💰 Control de Gastos", page_icon="💰", layout="centered")
 
 st.title("💰 CONTROL DE GASTOS")
 st.caption("Ing. Roberto Villarreal")
 
-# ============================================
-# DATOS
-# ============================================
 PRESUPUESTO_TOTAL = 13100
 ARCHIVO_DATOS = "gastos.json"
 
@@ -31,9 +25,6 @@ def guardar_gastos(gastos):
 if 'gastos' not in st.session_state:
     st.session_state.gastos = cargar_gastos()
 
-# ============================================
-# MÉTRICAS
-# ============================================
 total = sum(g['monto'] for g in st.session_state.gastos) if st.session_state.gastos else 0
 restante = PRESUPUESTO_TOTAL - total
 porcentaje = (total / PRESUPUESTO_TOTAL) * 100
@@ -45,25 +36,24 @@ col3.metric("RESTANTE", f"${restante:,.0f}")
 
 st.progress(min(porcentaje/100, 1.0))
 
-# ============================================
-# FORMULARIO - VERSIÓN ULTRA SIMPLE
-# ============================================
 st.subheader("➕ AGREGAR GASTO")
 
-with st.form("form"):
+with st.form("form_principal"):
     fecha = st.date_input("Fecha", datetime.now())
-    categoria = st.selectbox("Categoría", ["Alimentación", "Servicios", "Vivienda"])
+    categoria = st.selectbox("Categoría", ["Alimentación", "Servicios", "Vivienda"], key="cat_1")
     
-    # SUBCATEGORÍAS - EXPLÍCITAS Y CLARAS
-    if categoria == "Alimentación":
-        subcategoria = st.selectbox("Subcategoría", ["Desayuno", "Comida", "Cena"])
-    elif categoria == "Servicios":
-        subcategoria = st.selectbox("Subcategoría", ["Internet", "Luz", "Agua"])
-    else:
-        subcategoria = st.selectbox("Subcategoría", ["Mantenimiento", "Transporte"])
+    # ===== ESTA ES LA PARTE CRÍTICA =====
+    opciones = {
+        "Alimentación": ["Desayuno", "Comida", "Cena"],
+        "Servicios": ["Internet", "Luz", "Agua"],  # <-- AHORA SÍ SON LAS CORRECTAS
+        "Vivienda": ["Mantenimiento", "Transporte"]
+    }
     
-    monto = st.number_input("Monto $", value=100, step=10)
-    descripcion = st.text_input("Descripción")
+    subcategoria = st.selectbox("Subcategoría", opciones[categoria], key="sub_1")
+    # =====================================
+    
+    monto = st.number_input("Monto $", value=100, step=10, key="monto_1")
+    descripcion = st.text_input("Descripción", key="desc_1")
     
     if st.form_submit_button("💾 GUARDAR"):
         st.session_state.gastos.append({
@@ -76,17 +66,11 @@ with st.form("form"):
         guardar_gastos(st.session_state.gastos)
         st.rerun()
 
-# ============================================
-# MOSTRAR GASTOS
-# ============================================
 if st.session_state.gastos:
     st.subheader("📋 GASTOS")
     df = pd.DataFrame(st.session_state.gastos[-10:][::-1])
     st.dataframe(df, use_container_width=True)
 
-# ============================================
-# REINICIAR
-# ============================================
 if st.button("🗑️ REINICIAR"):
     st.session_state.gastos = []
     guardar_gastos([])
