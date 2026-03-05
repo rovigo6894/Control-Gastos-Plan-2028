@@ -5,14 +5,12 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import json
 import os
-import hashlib
-from io import BytesIO
 
 # ============================================
 # CONFIGURACIÓN INICIAL
 # ============================================
 st.set_page_config(
-    page_title="💰 Control de Gastos · Personal PRO",
+    page_title="💰 Control de Gastos PRO · OptiPensión 73",
     page_icon="💰",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -29,48 +27,58 @@ hide_streamlit_style = """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # ============================================
-# DATOS DE PRESUPUESTOS
+# DATOS DE PRESUPUESTOS CON INPC 2026
 # ============================================
+INPC_2026 = 1.042  # 4.2% de inflación estimada
+
 PRESUPUESTOS = {
     'Alimentación': {
         'total': 7900,
+        'total_2026': round(7900 * INPC_2026, 2),
         'subcategorias': {
-            'Desayuno': {'monto': 75, 'descripcion': 'Huevos con manteca, queso, aguacate o jamón serrano'},
-            'Comida': {'monto': 148.33, 'descripcion': 'Comida fuerte. Rib Eye, carnita asada'},
-            'Cena': {'monto': 40, 'descripcion': 'Ligero: aceitunas, plátano, frutos secos, quesadillas'}
+            'Desayuno': {'monto': 75, 'monto_2026': round(75 * INPC_2026, 2), 
+                        'descripcion': 'Huevos con manteca, queso, aguacate o jamón serrano'},
+            'Comida': {'monto': 148.33, 'monto_2026': round(148.33 * INPC_2026, 2),
+                      'descripcion': 'Comida fuerte. Rib Eye, carnita asada'},
+            'Cena': {'monto': 40, 'monto_2026': round(40 * INPC_2026, 2),
+                    'descripcion': 'Ligero: aceitunas, plátano, frutos secos, quesadillas'}
         }
     },
     'Servicios': {
         'total': 1550,
+        'total_2026': round(1550 * INPC_2026, 2),
         'subcategorias': {
-            'Internet': {'monto': 600, 'descripcion': ''},
-            'Luz': {'monto': 450, 'descripcion': ''},
-            'Agua': {'monto': 200, 'descripcion': 'Beneficio IPAM aplicado'},
-            'Celular': {'monto': 200, 'descripcion': ''},
-            'Gas': {'monto': 100, 'descripcion': ''}
+            'Internet': {'monto': 600, 'monto_2026': round(600 * INPC_2026, 2), 'descripcion': ''},
+            'Luz': {'monto': 450, 'monto_2026': round(450 * INPC_2026, 2), 'descripcion': ''},
+            'Agua': {'monto': 200, 'monto_2026': round(200 * INPC_2026, 2), 
+                    'descripcion': 'Beneficio IPAM aplicado'},
+            'Celular': {'monto': 200, 'monto_2026': round(200 * INPC_2026, 2), 'descripcion': ''},
+            'Gas': {'monto': 100, 'monto_2026': round(100 * INPC_2026, 2), 'descripcion': ''}
         }
     },
     'Vivienda': {
         'total': 2150,
+        'total_2026': round(2150 * INPC_2026, 2),
         'subcategorias': {
-            'Mantenimiento': {'monto': 1400, 'descripcion': 'Para que la casa siempre esté al cien'},
-            'Transporte': {'monto': 750, 'descripcion': ''}
+            'Mantenimiento': {'monto': 1400, 'monto_2026': round(1400 * INPC_2026, 2),
+                             'descripcion': 'Para que la casa siempre esté al cien'},
+            'Transporte': {'monto': 750, 'monto_2026': round(750 * INPC_2026, 2), 'descripcion': ''}
         }
     }
 }
 
 PRESUPUESTO_TOTAL = 13100
+PRESUPUESTO_TOTAL_2026 = round(13100 * INPC_2026, 2)
 ARCHIVO_DATOS = "gastos_completo.json"
 
 # ============================================
-# FUNCIONES DE PERSISTENCIA MEJORADAS
+# FUNCIONES DE PERSISTENCIA
 # ============================================
 def cargar_datos():
     if os.path.exists(ARCHIVO_DATOS):
         try:
             with open(ARCHIVO_DATOS, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                # Convertir fechas
                 for gasto in data['gastos']:
                     gasto['fecha'] = datetime.fromisoformat(gasto['fecha'])
                 return data
@@ -79,7 +87,6 @@ def cargar_datos():
     return {'gastos': [], 'presupuestos': PRESUPUESTOS, 'metas': []}
 
 def guardar_datos(data):
-    # Convertir fechas a string
     datos_guardar = {
         'gastos': [],
         'presupuestos': data['presupuestos'],
@@ -102,6 +109,9 @@ if 'datos' not in st.session_state:
     
 if 'current_month' not in st.session_state:
     st.session_state.current_month = datetime.now().replace(day=1)
+    
+if 'mostrar_2026' not in st.session_state:
+    st.session_state.mostrar_2026 = False
 
 # ============================================
 # FUNCIONES DE AYUDA
@@ -125,9 +135,10 @@ def calcular_totales(gastos_mes=None):
     if gastos_mes is None:
         gastos_mes = gastos_del_mes()
     total = sum(g['monto'] for g in gastos_mes)
-    restante = PRESUPUESTO_TOTAL - total
-    porcentaje = (total / PRESUPUESTO_TOTAL) * 100 if PRESUPUESTO_TOTAL > 0 else 0
-    return total, restante, porcentaje
+    presupuesto_actual = PRESUPUESTO_TOTAL_2026 if st.session_state.mostrar_2026 else PRESUPUESTO_TOTAL
+    restante = presupuesto_actual - total
+    porcentaje = (total / presupuesto_actual) * 100 if presupuesto_actual > 0 else 0
+    return total, restante, porcentaje, presupuesto_actual
 
 # ============================================
 # CSS MEJORADO
@@ -164,6 +175,17 @@ st.markdown("""
         color: #94a3b8;
     }
     
+    .inpc-badge {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+        padding: 0.2rem 1rem;
+        border-radius: 2rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        display: inline-block;
+        margin-left: 0.5rem;
+    }
+    
     .metric-card {
         background: rgba(255,255,255,0.95);
         backdrop-filter: blur(10px);
@@ -185,6 +207,9 @@ st.markdown("""
         font-size: 0.9rem;
         text-transform: uppercase;
         letter-spacing: 1px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
     
     .metric-value {
@@ -194,12 +219,19 @@ st.markdown("""
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         line-height: 1.2;
+        margin-top: 0.5rem;
     }
     
     .metric-value.warning {
         background: linear-gradient(135deg, #ef4444, #f87171);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+    }
+    
+    .metric-sub {
+        font-size: 0.8rem;
+        color: #64748b;
+        margin-top: 0.3rem;
     }
     
     .chart-container {
@@ -212,6 +244,16 @@ st.markdown("""
         box-shadow: 0 20px 35px -15px #000000;
     }
     
+    .explanation-box {
+        background: rgba(0,0,0,0.2);
+        border-radius: 1rem;
+        padding: 1rem;
+        margin: 1rem 0;
+        border-left: 4px solid #f59e0b;
+        font-size: 0.9rem;
+        color: #cbd5e1;
+    }
+    
     .footer {
         text-align: center;
         color: #94a3b8;
@@ -220,20 +262,58 @@ st.markdown("""
         padding-top: 2rem;
         border-top: 1px solid rgba(148,163,184,0.2);
     }
+    
+    .stButton > button {
+        background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 2rem !important;
+        font-weight: 600 !important;
+    }
+    
+    .stCheckbox > div > div {
+        color: white !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # ============================================
-# INTERFAZ PRINCIPAL
+# TÍTULO CON INPC
 # ============================================
-
-# Título
 st.markdown("""
 <div class="title-container">
-    <div class="main-title">Control de Gastos PRO</div>
+    <div class="main-title">
+        Control de Gastos PRO
+        <span class="inpc-badge">INPC 2026</span>
+    </div>
     <div class="sub-title">Ing. Roberto Villarreal · Plan Maestro 2026</div>
 </div>
 """, unsafe_allow_html=True)
+
+# ============================================
+# EXPLICACIÓN INPC
+# ============================================
+with st.expander("📈 ¿Qué es el INPC y por qué es importante?", expanded=False):
+    st.markdown("""
+    <div class="explanation-box">
+        <strong>📊 INPC (Índice Nacional de Precios al Consumidor)</strong><br><br>
+        El INPC mide la inflación, es decir, cómo aumenta el costo de vida con el tiempo.
+        Para mantener tu poder adquisitivo, tu presupuesto debe aumentar cada año.<br><br>
+        <strong>⚡ En esta app:</strong>
+        <ul>
+            <li>Puedes activar/desactivar el INPC 2026 (4.2%) con el checkbox</li>
+            <li>Al activarlo, todos los presupuestos se ajustan automáticamente</li>
+            <li>Así sabes cuánto deberías gastar HOY para mantener tu estilo de vida en 2026</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ============================================
+# CONTROL INPC
+# ============================================
+col1, col2, col3 = st.columns([1, 1, 1])
+with col2:
+    st.session_state.mostrar_2026 = st.checkbox("📈 Aplicar INPC 2026 (4.2%)", value=False)
 
 # ============================================
 # PESTAÑAS PRINCIPALES
@@ -273,15 +353,19 @@ with tab1:
     
     # Métricas principales
     gastos_mes = gastos_del_mes()
-    total_gastado, restante, porcentaje = calcular_totales(gastos_mes)
+    total_gastado, restante, porcentaje, presupuesto_actual = calcular_totales(gastos_mes)
     
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-title">💰 PRESUPUESTO</div>
-            <div class="metric-value">{format_money(PRESUPUESTO_TOTAL)}</div>
+            <div class="metric-title">
+                💰 PRESUPUESTO
+                <span style="font-size:0.7rem;">{'2026' if st.session_state.mostrar_2026 else '2025'}</span>
+            </div>
+            <div class="metric-value">{format_money(presupuesto_actual)}</div>
+            <div class="metric-sub">Base: {format_money(PRESUPUESTO_TOTAL)}</div>
         </div>
         """, unsafe_allow_html=True)
     
@@ -290,6 +374,7 @@ with tab1:
         <div class="metric-card">
             <div class="metric-title">💸 GASTADO</div>
             <div class="metric-value">{format_money(total_gastado)}</div>
+            <div class="metric-sub">{porcentaje:.1f}% del presupuesto</div>
         </div>
         """, unsafe_allow_html=True)
     
@@ -298,6 +383,7 @@ with tab1:
         <div class="metric-card">
             <div class="metric-title">⚖️ RESTANTE</div>
             <div class="metric-value {'warning' if restante < 0 else ''}">{format_money(restante)}</div>
+            <div class="metric-sub">Disponible hasta fin de mes</div>
         </div>
         """, unsafe_allow_html=True)
     
@@ -309,6 +395,20 @@ with tab1:
         <div class="metric-card">
             <div class="metric-title">📅 DÍAS REST.</div>
             <div class="metric-value">{dias_restantes}</div>
+            <div class="metric-sub">Presupuesto diario: {format_money(restante/dias_restantes if dias_restantes>0 else 0)}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Explicación de métricas
+    with st.expander("📊 ¿Qué significan estas cifras?", expanded=False):
+        st.markdown("""
+        <div class="explanation-box">
+            <strong>📈 Interpretación de métricas:</strong><br><br>
+            <strong>💰 PRESUPUESTO:</strong> Monto total disponible para el mes (ajustado por INPC si está activado).<br>
+            <strong>💸 GASTADO:</strong> Suma de todos los gastos registrados en el mes.<br>
+            <strong>⚖️ RESTANTE:</strong> Diferencia entre presupuesto y gastado (rojo si es negativo).<br>
+            <strong>📅 DÍAS REST:</strong> Días que faltan para terminar el mes y presupuesto diario recomendado.<br>
+            <strong>📊 Gráficas:</strong> Distribución por categoría y evolución diaria de gastos.
         </div>
         """, unsafe_allow_html=True)
     
@@ -324,6 +424,7 @@ with tab1:
                 df_cat = pd.DataFrame(gastos_mes)
                 cat_sum = df_cat.groupby('categoria')['monto'].sum().reset_index()
                 fig = px.pie(cat_sum, values='monto', names='categoria', 
+                            title="Distribución de gastos por categoría",
                             color_discrete_sequence=px.colors.sequential.Blues_r)
                 fig.update_layout(
                     paper_bgcolor='rgba(0,0,0,0)',
@@ -332,7 +433,7 @@ with tab1:
                 )
                 st.plotly_chart(fig, use_container_width=True)
             else:
-                st.info("Sin gastos este mes")
+                st.info("📭 Sin gastos este mes - Agrega gastos en la pestaña GASTOS")
             st.markdown('</div>', unsafe_allow_html=True)
     
     with col2:
@@ -345,6 +446,7 @@ with tab1:
                 df_daily['dia'] = df_daily['fecha'].dt.day
                 daily_sum = df_daily.groupby('dia')['monto'].sum().reset_index()
                 fig = px.line(daily_sum, x='dia', y='monto', 
+                            title="Gastos acumulados por día",
                             markers=True, line_shape='spline')
                 fig.update_layout(
                     paper_bgcolor='rgba(0,0,0,0)',
@@ -353,15 +455,15 @@ with tab1:
                 )
                 st.plotly_chart(fig, use_container_width=True)
             else:
-                st.info("Sin datos diarios")
+                st.info("📭 Sin datos diarios - Registra tus primeros gastos")
             st.markdown('</div>', unsafe_allow_html=True)
     
     # Barra de progreso
     st.markdown(f"""
     <div class="chart-container">
         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-            <span>Progreso mensual: {porcentaje:.1f}%</span>
-            <span>{format_money(total_gastado)} de {format_money(PRESUPUESTO_TOTAL)}</span>
+            <span>📊 Progreso mensual: {porcentaje:.1f}%</span>
+            <span>{format_money(total_gastado)} de {format_money(presupuesto_actual)}</span>
         </div>
         <div style="height: 20px; background: rgba(226,232,240,0.2); border-radius: 10px; overflow: hidden;">
             <div style="height: 20px; width: {min(porcentaje, 100)}%; 
@@ -370,14 +472,25 @@ with tab1:
                       border-radius: 10px; transition: width 0.5s;">
             </div>
         </div>
+        <div style="margin-top: 0.5rem; font-size:0.8rem; color:#94a3b8;">
+            {format_money(presupuesto_actual - total_gastado)} restantes para {dias_restantes} días
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
 # ============================================
-# PESTAÑA 2: GASTOS (con subcategorías)
+# PESTAÑA 2: GASTOS (con INPC)
 # ============================================
 with tab2:
     st.subheader("📋 Registro de Gastos")
+    
+    # Explicación rápida
+    st.markdown("""
+    <div class="explanation-box">
+        <strong>➕ Agrega tus gastos diarios aquí:</strong> Selecciona categoría, subcategoría, monto y descripción.
+        Los montos se comparan automáticamente con el presupuesto ajustado por INPC.
+    </div>
+    """, unsafe_allow_html=True)
     
     # Formulario rápido
     with st.expander("➕ AGREGAR GASTO RÁPIDO", expanded=True):
@@ -412,14 +525,36 @@ with tab2:
                 st.success("✅ Gasto guardado")
                 st.rerun()
     
-    # Vista por categorías
+    # Vista por categorías con INPC
     st.subheader("📊 Detalle por Categoría")
     
     for categoria, datos in PRESUPUESTOS.items():
         with st.expander(f"**{categoria}**", expanded=True):
+            # Totales de categoría
+            total_cat = sum(g['monto'] for g in gastos_del_mes() if g['categoria'] == categoria)
+            presupuesto_cat = datos['total_2026'] if st.session_state.mostrar_2026 else datos['total']
+            
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.markdown(f"**Total categoría:** {format_money(total_cat)}")
+            with col2:
+                st.markdown(f"**Presupuesto:** {format_money(presupuesto_cat)}")
+            
+            # Barra de progreso de categoría
+            progreso_cat = min(total_cat / presupuesto_cat, 1.0) if presupuesto_cat > 0 else 0
+            color_cat = '#ef4444' if total_cat > presupuesto_cat else '#f59e0b' if total_cat > presupuesto_cat * 0.8 else '#10b981'
+            st.markdown(f"""
+            <div style="height: 8px; background: rgba(226,232,240,0.2); border-radius: 10px; margin: 10px 0;">
+                <div style="height: 8px; width: {progreso_cat*100}%; background: {color_cat}; border-radius: 10px;"></div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Subcategorías
             for sub, presupuesto in datos['subcategorias'].items():
                 gastado = sum(g['monto'] for g in gastos_del_mes() 
                             if g['categoria'] == categoria and g['subcategoria'] == sub)
+                
+                presupuesto_sub = presupuesto['monto_2026'] if st.session_state.mostrar_2026 else presupuesto['monto']
                 
                 col1, col2 = st.columns([3, 1])
                 with col1:
@@ -428,10 +563,10 @@ with tab2:
                         st.caption(presupuesto['descripcion'])
                 with col2:
                     st.markdown(f"**{format_money(gastado)}**")
-                    st.markdown(f"de {format_money(presupuesto['monto'])}")
+                    st.markdown(f"de {format_money(presupuesto_sub)}")
                 
-                progreso = min(gastado / presupuesto['monto'], 1.0) if presupuesto['monto'] > 0 else 0
-                color = '#ef4444' if (gastado / presupuesto['monto']) > 1.0 else '#f59e0b' if (gastado / presupuesto['monto']) > 0.8 else '#10b981'
+                progreso = min(gastado / presupuesto_sub, 1.0) if presupuesto_sub > 0 else 0
+                color = '#ef4444' if gastado > presupuesto_sub else '#f59e0b' if gastado > presupuesto_sub * 0.8 else '#10b981'
                 
                 st.markdown(f"""
                 <div style="height: 8px; background: rgba(226,232,240,0.2); border-radius: 10px; margin: 10px 0;">
@@ -451,10 +586,17 @@ with tab2:
                     use_container_width=True, hide_index=True)
 
 # ============================================
-# PESTAÑA 3: ANÁLISIS AVANZADO
+# PESTAÑA 3: ANÁLISIS (con INPC)
 # ============================================
 with tab3:
     st.subheader("📈 Análisis Avanzado")
+    
+    st.markdown("""
+    <div class="explanation-box">
+        <strong>📊 Análisis de tendencias:</strong> Selecciona un rango de fechas para ver cómo han evolucionado tus gastos.
+        Las métricas se ajustan automáticamente al INPC si está activado.
+    </div>
+    """, unsafe_allow_html=True)
     
     # Selector de rango
     col1, col2 = st.columns(2)
@@ -465,7 +607,6 @@ with tab3:
         fecha_fin = st.date_input("Fecha fin", datetime.now())
     
     if fecha_inicio and fecha_fin:
-        # Filtrar gastos por rango
         gastos_rango = [g for g in st.session_state.datos['gastos'] 
                        if fecha_inicio <= g['fecha'].date() <= fecha_fin]
         
@@ -514,7 +655,7 @@ with tab3:
             with col4:
                 st.metric("Número de gastos", len(df_rango))
         else:
-            st.info("No hay gastos en el período seleccionado")
+            st.info("📭 No hay gastos en el período seleccionado")
 
 # ============================================
 # PESTAÑA 4: METAS DE AHORRO
@@ -522,8 +663,15 @@ with tab3:
 with tab4:
     st.subheader("🎯 Metas de Ahorro")
     
+    st.markdown("""
+    <div class="explanation-box">
+        <strong>🎯 Metas inteligentes:</strong> Define objetivos de ahorro y dales seguimiento.
+        Las metas se ajustan automáticamente con INPC para mantener su valor real.
+    </div>
+    """, unsafe_allow_html=True)
+    
     # Formulario para nueva meta
-    with st.expander("➕ NUEVA META"):
+    with st.expander("➕ NUEVA META", expanded=True):
         col1, col2 = st.columns(2)
         with col1:
             nombre_meta = st.text_input("Nombre de la meta")
@@ -537,11 +685,16 @@ with tab4:
                 if 'metas' not in st.session_state.datos:
                     st.session_state.datos['metas'] = []
                 
+                # Ajustar por INPC si está activado
+                monto_final = monto_meta * INPC_2026 if st.session_state.mostrar_2026 else monto_meta
+                
                 st.session_state.datos['metas'].append({
                     'nombre': nombre_meta,
-                    'monto_objetivo': monto_meta,
+                    'monto_objetivo': monto_final,
+                    'monto_original': monto_meta,
                     'fecha_limite': fecha_meta.isoformat(),
-                    'progreso': 0
+                    'progreso': 0,
+                    'ahorrado': 0
                 })
                 guardar_datos(st.session_state.datos)
                 st.success("Meta creada")
@@ -549,25 +702,32 @@ with tab4:
     
     # Mostrar metas
     if 'metas' in st.session_state.datos and st.session_state.datos['metas']:
-        for meta in st.session_state.datos['metas']:
+        for i, meta in enumerate(st.session_state.datos['metas']):
             with st.container():
-                col1, col2, col3 = st.columns([3, 1, 1])
+                col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
                 with col1:
                     st.markdown(f"**{meta['nombre']}**")
                     st.caption(f"Límite: {meta['fecha_limite']}")
                 with col2:
-                    st.markdown(f"**${meta['monto_objetivo']:,.0f}**")
+                    st.markdown(f"**Objetivo:** ${meta['monto_objetivo']:,.0f}")
                 with col3:
-                    if st.button("🗑️", key=f"del_{meta['nombre']}"):
-                        st.session_state.datos['metas'].remove(meta)
+                    ahorrado = st.number_input(f"Ahorrado", min_value=0, value=meta.get('ahorrado', 0), step=100, key=f"ahorro_{i}")
+                    meta['ahorrado'] = ahorrado
+                with col4:
+                    if st.button("🗑️", key=f"del_{i}"):
+                        st.session_state.datos['metas'].pop(i)
                         guardar_datos(st.session_state.datos)
                         st.rerun()
                 
-                # Barra de progreso simulada
-                st.progress(0.3)
+                progreso = min(ahorrado / meta['monto_objetivo'], 1.0) if meta['monto_objetivo'] > 0 else 0
+                st.progress(progreso, text=f"Progreso: {progreso*100:.1f}%")
                 st.divider()
+        
+        if st.button("💾 Guardar progreso", type="primary"):
+            guardar_datos(st.session_state.datos)
+            st.success("Progreso guardado")
     else:
-        st.info("No hay metas de ahorro configuradas")
+        st.info("🎯 No hay metas de ahorro configuradas - Crea tu primera meta")
 
 # ============================================
 # PESTAÑA 5: CONFIGURACIÓN
@@ -619,6 +779,9 @@ with tab5:
         st.metric("Monto total", format_money(total_monto))
     with col3:
         st.metric("Desde", primer_gasto.strftime('%d/%m/%Y') if primer_gasto else "N/A")
+    
+    st.markdown("### ⚡ Ajustes de INPC")
+    st.info(f"📈 INPC 2026 actual: {INPC_2026*100-100:.1f}% - Puedes activarlo/desactivarlo en el dashboard")
 
 # ============================================
 # FOOTER
@@ -626,7 +789,7 @@ with tab5:
 st.markdown("""
 <div class="footer">
     <p>📧 contacto@optipension73.com · 📱 871 579 1810</p>
-    <p>⚡ Versión Personal PRO · Todas las funciones · Datos locales</p>
-    <p>© 2026 · OptiPensión 73</p>
+    <p>⚡ Versión Personal PRO · Con INPC 2026 · Datos locales</p>
+    <p>© 2026 · OptiPensión 73 · Optimización Integral</p>
 </div>
 """, unsafe_allow_html=True)
