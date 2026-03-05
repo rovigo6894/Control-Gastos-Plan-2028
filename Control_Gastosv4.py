@@ -56,20 +56,12 @@ st.markdown("""
         margin-bottom: 2rem;
     }
     
-    .metric-container {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1rem;
-        margin: 2rem 0;
-    }
-    
     .metric-card {
         background: white;
         border-radius: 1rem;
         padding: 1.5rem;
         text-align: center;
         box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
-        transition: transform 0.2s;
     }
     
     .metric-card.exceeded {
@@ -112,7 +104,6 @@ st.markdown("""
         color: #666;
         font-size: 0.9rem;
         text-transform: uppercase;
-        letter-spacing: 1px;
     }
     
     .metric-value {
@@ -122,28 +113,12 @@ st.markdown("""
         margin: 0.5rem 0;
     }
     
-    .metric-delta {
-        font-size: 0.9rem;
-        color: #10b981;
-    }
-    
-    .metric-delta.negative {
-        color: #ef4444;
-    }
-    
     .progress-container {
         background: white;
         border-radius: 1rem;
         padding: 1.5rem;
         margin: 2rem 0;
         box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
-    }
-    
-    .progress-label {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 0.5rem;
-        color: #666;
     }
     
     .progress-bar {
@@ -184,14 +159,6 @@ st.markdown("""
         border-left: 4px solid #f59e0b;
     }
     
-    .alert-title {
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 1px solid #e0e0e0;
-    }
-    
     .alert-item {
         display: flex;
         justify-content: space-between;
@@ -207,20 +174,6 @@ st.markdown("""
     
     .alert-item.warning {
         background: #fef3c7;
-    }
-    
-    .alert-name {
-        font-weight: 500;
-    }
-    
-    .alert-amount.exceeded {
-        color: #dc2626;
-        font-weight: 600;
-    }
-    
-    .alert-amount.warning {
-        color: #d97706;
-        font-weight: 600;
     }
     
     .form-container {
@@ -246,13 +199,6 @@ st.markdown("""
         box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
     }
     
-    .subcategoria-info {
-        font-size: 0.8rem;
-        color: #666;
-        margin-top: 0.2rem;
-        font-style: italic;
-    }
-    
     .expenses-table {
         background: white;
         border-radius: 1rem;
@@ -270,19 +216,6 @@ st.markdown("""
         border-top: 1px solid rgba(255,255,255,0.2);
     }
     
-    .stButton > button {
-        background: linear-gradient(90deg, #667eea, #764ba2) !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 0.5rem !important;
-        padding: 0.5rem 1rem !important;
-        font-weight: 600 !important;
-    }
-    
-    .stNumberInput > div > div {
-        border-radius: 0.5rem !important;
-    }
-    
     .warning-text {
         color: #ef4444;
         font-size: 0.8rem;
@@ -292,7 +225,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ============================================
-# DATOS
+# DATOS DE PRESUPUESTOS
 # ============================================
 PRESUPUESTOS = {
     'Alimentación': {
@@ -338,6 +271,10 @@ def guardar_gastos(gastos):
 # ============================================
 if 'gastos' not in st.session_state:
     st.session_state.gastos = cargar_gastos()
+
+# Inicializar categoría por defecto en session_state
+if 'categoria_actual' not in st.session_state:
+    st.session_state.categoria_actual = list(PRESUPUESTOS.keys())[0]
 
 # ============================================
 # FUNCIÓN DE ALERTAS
@@ -408,7 +345,7 @@ if excedidos:
             st.markdown(f"""
             <div class="alert-item exceeded">
                 <span class="alert-name">{item['nombre']}</span>
-                <span class="alert-amount exceeded">+${item['exceso']:,.0f} (${item['gastado']:,.0f}/${item['limite']:,.0f})</span>
+                <span class="alert-amount exceeded">+${item['exceso']:,.0f} (${item['gastado']:,.0f}/{item['limite']:,.0f})</span>
             </div>
             """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
@@ -421,7 +358,7 @@ if cerca_limite:
             st.markdown(f"""
             <div class="alert-item warning">
                 <span class="alert-name">{item['nombre']}</span>
-                <span class="alert-amount warning">${item['restante']:,.0f} restantes (${item['gastado']:,.0f}/${item['limite']:,.0f})</span>
+                <span class="alert-amount warning">${item['restante']:,.0f} restantes (${item['gastado']:,.0f}/{item['limite']:,.0f})</span>
             </div>
             """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
@@ -452,7 +389,7 @@ with col2:
     <div class="metric-card {clase_gastado}">
         <div class="metric-label">💸 GASTADO</div>
         <div class="metric-value">${total_gastado:,.0f}</div>
-        <div class="metric-delta {'negative' if porcentaje > 100 else ''}">{porcentaje:.1f}%</div>
+        <div class="metric-delta">{porcentaje:.1f}%</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -461,7 +398,7 @@ with col3:
     <div class="metric-card">
         <div class="metric-label">⚖️ RESTANTE</div>
         <div class="metric-value">${restante:,.0f}</div>
-        <div class="metric-delta {'negative' if restante < 0 else ''}">Disponible</div>
+        <div class="metric-delta">{'Negativo' if restante < 0 else 'Disponible'}</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -488,25 +425,22 @@ st.markdown(f"""
 if st.session_state.gastos:
     df = pd.DataFrame(st.session_state.gastos)
     
-    # GRÁFICA 1: Distribución por categoría
+    # Gráfica 1: Distribución por categoría
     st.markdown('<div class="chart-container">', unsafe_allow_html=True)
     st.markdown('<div class="form-title">📊 DISTRIBUCIÓN POR CATEGORÍA</div>', unsafe_allow_html=True)
     
     cat_sum = df.groupby('categoria')['monto'].sum().reset_index()
-    fig1 = px.pie(cat_sum, values='monto', names='categoria', 
-                  title="Gastos por Categoría",
-                  color_discrete_sequence=px.colors.sequential.Blues_r)
+    fig1 = px.pie(cat_sum, values='monto', names='categoria')
     fig1.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
         font_family="Inter",
-        showlegend=True,
         height=400
     )
     st.plotly_chart(fig1, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
     
-    # GRÁFICA 2: Evolución temporal
+    # Gráfica 2: Evolución temporal
     st.markdown('<div class="chart-container">', unsafe_allow_html=True)
     st.markdown('<div class="form-title">📈 EVOLUCIÓN DE GASTOS</div>', unsafe_allow_html=True)
     
@@ -514,47 +448,18 @@ if st.session_state.gastos:
     df_time = df.groupby('fecha')['monto'].sum().reset_index()
     df_time = df_time.sort_values('fecha')
     
-    fig2 = px.line(df_time, x='fecha', y='monto', 
-                   title="Gastos por Día",
-                   markers=True,
-                   line_shape='spline')
+    fig2 = px.line(df_time, x='fecha', y='monto', markers=True)
     fig2.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
         font_family="Inter",
-        height=400,
-        xaxis_title="Fecha",
-        yaxis_title="Monto ($)"
+        height=400
     )
     st.plotly_chart(fig2, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
-    
-    # GRÁFICA 3: Barras por subcategoría (Top 10)
-    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-    st.markdown('<div class="form-title">📊 TOP 10 GASTOS POR SUBCATEGORÍA</div>', unsafe_allow_html=True)
-    
-    sub_sum = df.groupby(['categoria', 'subcategoria'])['monto'].sum().reset_index()
-    sub_sum['nombre'] = sub_sum['categoria'] + ' - ' + sub_sum['subcategoria']
-    sub_sum = sub_sum.nlargest(10, 'monto')
-    
-    fig3 = px.bar(sub_sum, x='monto', y='nombre', 
-                  orientation='h',
-                  title="Mayores Gastos",
-                  color='monto',
-                  color_continuous_scale='Blues')
-    fig3.update_layout(
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        font_family="Inter",
-        height=400,
-        xaxis_title="Monto ($)",
-        yaxis_title=""
-    )
-    st.plotly_chart(fig3, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # ============================================
-# FORMULARIO
+# FORMULARIO CON SUBCATEGORÍAS DINÁMICAS
 # ============================================
 st.markdown('<div class="form-container">', unsafe_allow_html=True)
 st.markdown('<div class="form-title">➕ AGREGAR / CORREGIR GASTO</div>', unsafe_allow_html=True)
@@ -564,15 +469,29 @@ with st.form("nuevo_gasto"):
     
     with col1:
         fecha = st.date_input("📅 Fecha", datetime.now())
-        categoria = st.selectbox("📁 Categoría", list(PRESUPUESTOS.keys()))
-        subcategorias = list(PRESUPUESTOS[categoria]['subcategorias'].keys())
-        subcategoria = st.selectbox("📂 Subcategoría", subcategorias)
+        
+        # Categoría con callback para actualizar subcategorías
+        categoria = st.selectbox(
+            "📁 Categoría", 
+            list(PRESUPUESTOS.keys()),
+            key='categoria_select'
+        )
     
     with col2:
         monto = st.number_input("💰 Monto $ (negativo para corregir)", value=100, step=10)
         descripcion = st.text_input("📝 Descripción")
-        if monto < 0:
-            st.markdown('<div class="warning-text">⚠️ Corrección (restando)</div>', unsafe_allow_html=True)
+    
+    # Subcategorías - Se actualizan según la categoría seleccionada
+    subcategorias = list(PRESUPUESTOS[categoria]['subcategorias'].keys())
+    subcategoria = st.selectbox("📂 Subcategoría", subcategorias)
+    
+    # Mostrar descripción de la subcategoría seleccionada
+    desc_sub = PRESUPUESTOS[categoria]['subcategorias'][subcategoria]['descripcion']
+    if desc_sub:
+        st.caption(f"ℹ️ {desc_sub}")
+    
+    if monto < 0:
+        st.warning("⚠️ Estás restando dinero (corrección)")
     
     if st.form_submit_button("💾 GUARDAR", use_container_width=True):
         if fecha and categoria and subcategoria and monto != 0:
@@ -580,7 +499,7 @@ with st.form("nuevo_gasto"):
                 'fecha': fecha.strftime('%Y-%m-%d'),
                 'categoria': categoria,
                 'subcategoria': subcategoria,
-                'descripcion': descripcion,
+                'descripcion': descripcion if descripcion else desc_sub,
                 'monto': monto
             })
             guardar_gastos(st.session_state.gastos)
@@ -590,7 +509,7 @@ with st.form("nuevo_gasto"):
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ============================================
-# RESUMEN POR CATEGORÍA
+# DETALLE POR CATEGORÍA
 # ============================================
 if st.session_state.gastos:
     df = pd.DataFrame(st.session_state.gastos)
@@ -617,21 +536,21 @@ if st.session_state.gastos:
             # Subcategorías
             for sub, sub_data in datos['subcategorias'].items():
                 gastos_sub = df[(df['categoria'] == cat) & (df['subcategoria'] == sub)]['monto'].sum() if not df.empty else 0
-                if gastos_sub != 0 or True:  # Mostrar todas para contexto
-                    if gastos_sub > sub_data['monto']:
-                        emoji_sub = "🔴"
-                    elif gastos_sub > sub_data['monto'] * 0.8:
-                        emoji_sub = "🟡"
-                    else:
-                        emoji_sub = "🟢"
-                    
-                    st.markdown(f"&nbsp;&nbsp;{emoji_sub} {sub}: ${gastos_sub:,.2f} / ${sub_data['monto']:,.2f}")
+                
+                if gastos_sub > sub_data['monto']:
+                    emoji_sub = "🔴"
+                elif gastos_sub > sub_data['monto'] * 0.8:
+                    emoji_sub = "🟡"
+                else:
+                    emoji_sub = "🟢"
+                
+                st.markdown(f"&nbsp;&nbsp;{emoji_sub} {sub}: ${gastos_sub:,.2f} / ${sub_data['monto']:,.2f}")
         
         with col2:
             st.markdown(f"**${gastos_cat:,.0f}**")
             st.markdown(f"*{porcentaje_cat:.1f}%*")
         
-        # Barra de progreso de categoría
+        # Barra de progreso
         color_bar = "#ef4444" if gastos_cat > datos['total'] else "#f59e0b" if gastos_cat > datos['total'] * 0.8 else "#10b981"
         st.markdown(f"""
         <div style="height: 8px; background: #e0e0e0; border-radius: 4px; margin: 10px 0;">
@@ -674,7 +593,7 @@ with col2:
 st.markdown("""
 <div class="footer">
     <p>📧 contacto@optipension73.com · 📱 871 579 1810</p>
-    <p>⚡ Versión PRO · Gráficas interactivas · Alertas automáticas</p>
+    <p>⚡ Versión PRO · Subcategorías dinámicas · Gráficas interactivas</p>
     <p>© 2026 · OptiPensión 73</p>
 </div>
 """, unsafe_allow_html=True)
