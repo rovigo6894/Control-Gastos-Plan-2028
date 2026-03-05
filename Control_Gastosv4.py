@@ -14,13 +14,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Forzar recarga de CSS (NUEVO)
-st.markdown("""
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
-""", unsafe_allow_html=True)
-
 # Ocultar menús de Streamlit
 hide_streamlit_style = """
             <style>
@@ -67,41 +60,26 @@ PRESUPUESTO_TOTAL = 13100
 ARCHIVO_DATOS = "gastos.json"
 
 # ============================================
-# CSS MEJORADO (MÁS ROBUSTO)
+# CSS ORIGINAL (FONDO NEGRO)
 # ============================================
 st.markdown("""
 <style>
-    /* Reset completo */
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
-    
-    /* Fondo blanco forzado */
-    .stApp, .main, .block-container {
-        background: white !important;
-        max-width: 1200px !important;
-        padding-top: 2rem !important;
-        padding-bottom: 2rem !important;
-    }
-    
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     
     html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif !important;
+        font-family: 'Inter', sans-serif;
     }
     
-    /* Header */
+    .main {
+        background: linear-gradient(145deg, #1a2f3a 0%, #0f2a35 100%);
+        padding: 1rem;
+    }
+    
     .header {
         display: flex;
         align-items: center;
         gap: 1rem;
         margin-bottom: 2rem;
-        background: white;
-        padding: 1rem;
-        border-radius: 1rem;
-        border: 1px solid #e2e8f0;
     }
     
     .logo {
@@ -114,54 +92,54 @@ st.markdown("""
         align-items: center;
         justify-content: center;
         font-size: 2rem;
-        box-shadow: 0 4px 6px -2px #cbd5e1;
+        box-shadow: 0 10px 18px -8px #0b2a3a;
     }
     
     .title h1 {
-        color: #0f172a;
+        color: #103c51;
         font-size: 2rem;
         font-weight: 600;
         margin: 0;
     }
     
     .title p {
-        color: #475569;
+        color: #3c647a;
         font-size: 0.9rem;
         margin: 0;
     }
     
-    /* Selector de mes */
     .month-selector {
-        background: #f8fafc;
-        border-radius: 2rem;
+        background: white;
+        border-radius: 3rem;
         padding: 0.8rem 2rem;
         display: flex;
         align-items: center;
         justify-content: space-between;
         margin-bottom: 2rem;
-        border: 1px solid #e2e8f0;
+        border: 1px solid #caddf0;
+        box-shadow: 0 4px 12px -6px #809aaf;
     }
     
     .month-selector span {
         font-weight: 600;
-        color: #1e293b;
+        color: #1a4d6b;
         font-size: 1.3rem;
     }
     
-    /* Filas de resumen */
     .resumen-fila {
-        background: #f8fafc;
-        border-radius: 1rem;
+        background: white;
+        border-radius: 1.5rem;
         padding: 1.2rem 1.8rem;
         margin-bottom: 1rem;
+        box-shadow: 0 8px 16px -10px #7f9bb3;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        border: 1px solid #e2e8f0;
+        border: 1px solid #f1f5f9;
     }
     
     .resumen-label {
-        color: #475569;
+        color: #3c5a70;
         font-size: 1.1rem;
         font-weight: 500;
     }
@@ -169,32 +147,32 @@ st.markdown("""
     .resumen-number {
         font-size: 2rem;
         font-weight: 700;
-        color: #0f172a;
+        color: #103c51;
     }
     
     .resumen-number.warning {
         color: #dc2626;
     }
     
-    /* Barra de progreso */
     .progress-container {
-        background: #f8fafc;
-        border-radius: 1rem;
+        background: white;
+        border-radius: 1.5rem;
         padding: 1.2rem 1.8rem;
-        margin-bottom: 2rem;
-        border: 1px solid #e2e8f0;
+        margin-bottom: 1rem;
+        box-shadow: 0 8px 16px -10px #7f9bb3;
+        border: 1px solid #f1f5f9;
     }
     
     .progress-header {
         display: flex;
         justify-content: space-between;
-        margin-bottom: 0.8rem;
-        color: #475569;
+        margin-bottom: 0.5rem;
+        color: #2f5777;
         font-weight: 500;
     }
     
     .progress-bar {
-        background: #e2e8f0;
+        background: #e4ecf3;
         height: 12px;
         border-radius: 20px;
         width: 100%;
@@ -202,37 +180,167 @@ st.markdown("""
     
     .progress-fill {
         height: 12px;
+        background: #2563eb;
         border-radius: 20px;
+        width: 0%;
         transition: width 0.3s;
     }
     
-    /* Footer */
+    .progress-fill.warning { background: #f59e0b; }
+    .progress-fill.danger { background: #dc2626; }
+    
+    .categoria {
+        background: white;
+        border-radius: 1.5rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 8px 16px -10px #7f9bb3;
+        border: 1px solid #f1f5f9;
+    }
+    
+    .categoria-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e4ecf3;
+    }
+    
+    .categoria-nombre {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #0f172a;
+    }
+    
+    .categoria-total {
+        font-weight: 600;
+        color: #2563eb;
+    }
+    
+    .subcategoria {
+        padding: 1rem 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    
+    .subcategoria:last-child {
+        border-bottom: none;
+    }
+    
+    .subcategoria-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .subcategoria-nombre {
+        font-weight: 600;
+        color: #1e293b;
+    }
+    
+    .subcategoria-detalle {
+        font-size: 0.8rem;
+        color: #64748b;
+        margin-bottom: 0.5rem;
+        font-style: italic;
+    }
+    
+    .subcategoria-montos {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 0.5rem 0;
+        padding: 0.5rem 0;
+    }
+    
+    .subcategoria-gastado {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+    
+    .subcategoria-presupuesto {
+        color: #64748b;
+        font-size: 0.95rem;
+    }
+    
+    .mini-progress {
+        height: 8px;
+        background: #e2e8f0;
+        border-radius: 10px;
+        width: 100%;
+        margin: 0.5rem 0;
+    }
+    
+    .mini-fill {
+        height: 8px;
+        border-radius: 10px;
+        width: 0%;
+        transition: width 0.3s;
+    }
+    
+    .fill-green { background: #10b981; }
+    .fill-yellow { background: #f59e0b; }
+    .fill-red { background: #ef4444; }
+    
+    .status-badge {
+        padding: 0.3rem 1rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+    
+    .status-good { background: #d1fae5; color: #047857; }
+    .status-warning { background: #fed7aa; color: #b45309; }
+    .status-danger { background: #fee2e2; color: #b91c1c; }
+    
+    .form-card {
+        background: white;
+        border-radius: 1.5rem;
+        padding: 1.5rem;
+        margin: 2rem 0;
+        box-shadow: 0 8px 16px -10px #7f9bb3;
+        border: 1px solid #f1f5f9;
+    }
+    
+    .form-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        color: #0f172a;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+    
     .footer {
         text-align: center;
         color: #64748b;
         font-size: 0.8rem;
         margin-top: 2rem;
-        padding-top: 2rem;
-        border-top: 1px solid #e2e8f0;
+        padding-top: 1.5rem;
+        border-top: 1px solid #c9deef;
     }
     
-    /* Botones */
     .stButton > button {
         background: #2563eb !important;
         color: white !important;
         border: none !important;
-        padding: 0.8rem 1.5rem !important;
+        padding: 0.8rem 2rem !important;
         border-radius: 2rem !important;
         font-weight: 600 !important;
         font-size: 1rem !important;
         width: 100% !important;
         transition: all 0.2s !important;
+        box-shadow: 0 4px 12px -6px #1e40af !important;
     }
     
     .stButton > button:hover {
         background: #1d4ed8 !important;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 6px -2px #94a3b8 !important;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px -6px #1e3a8a !important;
     }
     
     .stButton > button[kind="secondary"] {
@@ -243,20 +351,24 @@ st.markdown("""
         background: #dc2626 !important;
     }
     
-    /* Inputs */
-    .stSelectbox > div > div,
-    .stDateInput > div > div,
-    .stNumberInput > div > div,
-    .stTextInput > div > div {
-        border-radius: 0.8rem !important;
-        border: 1px solid #e2e8f0 !important;
-        background: #f8fafc !important;
+    .stSelectbox > div > div {
+        border-radius: 1rem !important;
+        border: 1px solid #caddf0 !important;
     }
     
-    /* Dividers */
-    hr {
-        margin: 1rem 0 !important;
-        border-color: #e2e8f0 !important;
+    .stDateInput > div > div {
+        border-radius: 1rem !important;
+        border: 1px solid #caddf0 !important;
+    }
+    
+    .stNumberInput > div > div {
+        border-radius: 1rem !important;
+        border: 1px solid #caddf0 !important;
+    }
+    
+    .stTextInput > div > div {
+        border-radius: 1rem !important;
+        border: 1px solid #caddf0 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -287,7 +399,7 @@ def guardar_gastos(gastos):
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 # ============================================
-# FUNCIÓN PARA EXPORTAR A CSV
+# FUNCIÓN PARA EXPORTAR A CSV (SIN OPENPYXL)
 # ============================================
 def exportar_a_csv():
     if st.session_state.gastos:
@@ -344,7 +456,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Botón de exportar
+# Botón de exportar a CSV
 col_exp1, col_exp2, col_exp3 = st.columns([1, 1, 1])
 with col_exp2:
     csv_data = exportar_a_csv()
@@ -356,6 +468,8 @@ with col_exp2:
             mime="text/csv",
             use_container_width=True
         )
+    else:
+        st.button("📥 Exportar a CSV", disabled=True, use_container_width=True)
 
 # Selector de mes
 col1, col2, col3 = st.columns([1, 3, 1])
@@ -410,7 +524,12 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # Barra de progreso
-color_barra = '#dc2626' if porcentaje > 100 else '#f59e0b' if porcentaje > 80 else '#2563eb'
+fill_class = ''
+if porcentaje > 100:
+    fill_class = 'danger'
+elif porcentaje > 80:
+    fill_class = 'warning'
+
 st.markdown(f"""
 <div class="progress-container">
     <div class="progress-header">
@@ -418,13 +537,13 @@ st.markdown(f"""
         <span>${PRESUPUESTOS['Alimentación']['diario']:.2f}/día</span>
     </div>
     <div class="progress-bar">
-        <div class="progress-fill" style="background-color: {color_barra}; width: {min(porcentaje, 100)}%;"></div>
+        <div class="progress-fill {fill_class}" style="width:{min(porcentaje, 100)}%"></div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # ============================================
-# CATEGORÍAS
+# CATEGORÍAS (VERSIÓN SIMPLE QUE FUNCIONA)
 # ============================================
 for categoria, datos in PRESUPUESTOS.items():
     with st.expander(f"**{categoria}**", expanded=True):
@@ -441,7 +560,7 @@ for categoria, datos in PRESUPUESTOS.items():
                 st.markdown(f"**{format_money(gastado)}**")
                 st.markdown(f"de {format_money(presupuesto['monto'])}")
             
-            # Barra de progreso individual
+            # Barra de progreso
             progreso = min(gastado / presupuesto['monto'], 1.0) if presupuesto['monto'] > 0 else 0
             color = '#dc2626' if (gastado / presupuesto['monto']) > 1.0 else '#f59e0b' if (gastado / presupuesto['monto']) > 0.8 else '#10b981'
             st.markdown(f"""
@@ -452,21 +571,21 @@ for categoria, datos in PRESUPUESTOS.items():
             st.divider()
 
 # ============================================
-# FORMULARIO
+# FORMULARIO PARA AGREGAR GASTOS
 # ============================================
 st.markdown("### ➕ Agregar / Corregir gasto")
 
 col1, col2 = st.columns(2)
 with col1:
     fecha = st.date_input("Fecha", datetime.now())
-    categoria_sel = st.selectbox("Categoría", list(PRESUPUESTOS.keys()))
+    categoria_sel = st.selectbox("Categoría", list(PRESUPUESTOS.keys()), key="cat_select")
     
 with col2:
     subcategorias = list(PRESUPUESTOS[categoria_sel]['subcategorias'].keys())
-    subcategoria_sel = st.selectbox("Subcategoría", subcategorias)
-    monto = st.number_input("Monto $", value=100, step=1)
+    subcategoria_sel = st.selectbox("Subcategoría", subcategorias, key="sub_select")
+    monto = st.number_input("Monto $ (positivo o negativo)", value=100, step=1, key="monto_input")
 
-descripcion = st.text_input("Descripción")
+descripcion = st.text_input("Descripción", key="desc_input")
 
 col_b1, col_b2, col_b3 = st.columns(3)
 with col_b1:
@@ -481,9 +600,10 @@ with col_b1:
             }
             st.session_state.gastos.append(nuevo_gasto)
             guardar_gastos(st.session_state.gastos)
+            st.success("✅ Gasto guardado")
             st.rerun()
         else:
-            st.error("Completa todos los campos")
+            st.error("❌ Completa todos los campos")
 
 with col_b2:
     if st.button("🔄 Reiniciar mes", use_container_width=True, type="secondary"):
@@ -491,6 +611,7 @@ with col_b2:
                                    if not (g['fecha'].year == st.session_state.current_month.year 
                                           and g['fecha'].month == st.session_state.current_month.month)]
         guardar_gastos(st.session_state.gastos)
+        st.success("✅ Mes reiniciado")
         st.rerun()
 
 # ============================================
@@ -510,7 +631,7 @@ if gastos_mes:
         with cols[2]:
             st.write(row['subcategoria'])
         with cols[3]:
-            st.write(row['descripcion'][:20])
+            st.write(row['descripcion'][:20] + ('...' if len(row['descripcion']) > 20 else ''))
         with cols[4]:
             st.write(f"**{format_money(row['monto'])}**")
 
@@ -520,6 +641,7 @@ if gastos_mes:
 st.markdown("""
 <div class="footer">
     <p>📧 contacto@optipension73.com · 📱 871 579 1810</p>
+    <p>✅ Datos guardados permanentemente · Cada mes independiente</p>
     <p>© 2026 · OptiPensión 73</p>
 </div>
 """, unsafe_allow_html=True)
