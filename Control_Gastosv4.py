@@ -9,25 +9,12 @@ import os
 # ============================================
 st.set_page_config(page_title="💰 Control de Gastos", page_icon="💰", layout="centered")
 
-# Ocultar menús
-hide_streamlit_style = """
-            <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            header {visibility: hidden;}
-            </style>
-            """
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+st.title("💰 CONTROL DE GASTOS")
+st.caption("Ing. Roberto Villarreal")
 
 # ============================================
-# DATOS CORRECTOS
+# DATOS
 # ============================================
-SUBCATEGORIAS = {
-    'Alimentación': ['Desayuno', 'Comida', 'Cena'],
-    'Servicios': ['Internet', 'Luz', 'Agua'],
-    'Vivienda': ['Mantenimiento', 'Transporte']
-}
-
 PRESUPUESTO_TOTAL = 13100
 ARCHIVO_DATOS = "gastos.json"
 
@@ -41,51 +28,39 @@ def guardar_gastos(gastos):
     with open(ARCHIVO_DATOS, 'w') as f:
         json.dump(gastos, f, indent=2)
 
-# ============================================
-# INICIALIZAR
-# ============================================
 if 'gastos' not in st.session_state:
     st.session_state.gastos = cargar_gastos()
 
 # ============================================
-# TÍTULO
-# ============================================
-st.title("💰 CONTROL DE GASTOS")
-st.caption("Ing. Roberto Villarreal")
-
-# ============================================
 # MÉTRICAS
 # ============================================
-total_gastado = sum(g['monto'] for g in st.session_state.gastos) if st.session_state.gastos else 0
-restante = PRESUPUESTO_TOTAL - total_gastado
-porcentaje = (total_gastado / PRESUPUESTO_TOTAL) * 100
+total = sum(g['monto'] for g in st.session_state.gastos) if st.session_state.gastos else 0
+restante = PRESUPUESTO_TOTAL - total
+porcentaje = (total / PRESUPUESTO_TOTAL) * 100
 
 col1, col2, col3 = st.columns(3)
 col1.metric("PRESUPUESTO", f"${PRESUPUESTO_TOTAL:,.0f}")
-col2.metric("GASTADO", f"${total_gastado:,.0f}", f"{porcentaje:.1f}%")
+col2.metric("GASTADO", f"${total:,.0f}", f"{porcentaje:.1f}%")
 col3.metric("RESTANTE", f"${restante:,.0f}")
 
-# ============================================
-# PROGRESO
-# ============================================
 st.progress(min(porcentaje/100, 1.0))
 
 # ============================================
-# FORMULARIO - VERSIÓN SIMPLE
+# FORMULARIO - VERSIÓN ULTRA SIMPLE
 # ============================================
 st.subheader("➕ AGREGAR GASTO")
 
-with st.form("formulario"):
+with st.form("form"):
     fecha = st.date_input("Fecha", datetime.now())
-    categoria = st.selectbox("Categoría", list(SUBCATEGORIAS.keys()))
+    categoria = st.selectbox("Categoría", ["Alimentación", "Servicios", "Vivienda"])
     
-    # SUBCATEGORÍA - DIRECTA Y SIMPLE
-    if categoria == 'Alimentación':
-        subcategoria = st.selectbox("Subcategoría", ['Desayuno', 'Comida', 'Cena'])
-    elif categoria == 'Servicios':
-        subcategoria = st.selectbox("Subcategoría", ['Internet', 'Luz', 'Agua'])
+    # SUBCATEGORÍAS - EXPLÍCITAS Y CLARAS
+    if categoria == "Alimentación":
+        subcategoria = st.selectbox("Subcategoría", ["Desayuno", "Comida", "Cena"])
+    elif categoria == "Servicios":
+        subcategoria = st.selectbox("Subcategoría", ["Internet", "Luz", "Agua"])
     else:
-        subcategoria = st.selectbox("Subcategoría", ['Mantenimiento', 'Transporte'])
+        subcategoria = st.selectbox("Subcategoría", ["Mantenimiento", "Transporte"])
     
     monto = st.number_input("Monto $", value=100, step=10)
     descripcion = st.text_input("Descripción")
@@ -99,21 +74,20 @@ with st.form("formulario"):
             'monto': monto
         })
         guardar_gastos(st.session_state.gastos)
-        st.success("✅ Gasto guardado")
         st.rerun()
 
 # ============================================
-# LISTA DE GASTOS
+# MOSTRAR GASTOS
 # ============================================
 if st.session_state.gastos:
-    st.subheader("📋 GASTOS RECIENTES")
+    st.subheader("📋 GASTOS")
     df = pd.DataFrame(st.session_state.gastos[-10:][::-1])
     st.dataframe(df, use_container_width=True)
 
 # ============================================
 # REINICIAR
 # ============================================
-if st.button("🗑️ REINICIAR TODO"):
+if st.button("🗑️ REINICIAR"):
     st.session_state.gastos = []
     guardar_gastos([])
     st.rerun()
