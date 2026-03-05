@@ -3,7 +3,6 @@ import pandas as pd
 from datetime import datetime
 import json
 import os
-from io import BytesIO
 
 # ============================================
 # CONFIGURACIÓN INICIAL
@@ -14,6 +13,13 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="collapsed"
 )
+
+# Forzar recarga de CSS (NUEVO)
+st.markdown("""
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+""", unsafe_allow_html=True)
 
 # Ocultar menús de Streamlit
 hide_streamlit_style = """
@@ -61,31 +67,32 @@ PRESUPUESTO_TOTAL = 13100
 ARCHIVO_DATOS = "gastos.json"
 
 # ============================================
-# FONDO MÁS CLARO (FONDO BLANCO PURO)
+# CSS MEJORADO (MÁS ROBUSTO)
 # ============================================
 st.markdown("""
 <style>
-    /* Fondo blanco puro y limpio */
-    .stApp {
-        background: white !important;
+    /* Reset completo */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
     }
     
-    .main {
+    /* Fondo blanco forzado */
+    .stApp, .main, .block-container {
         background: white !important;
-        padding: 1rem;
-    }
-    
-    /* Eliminar cualquier gradiente */
-    .css-1d391kg, .css-12oz5g7 {
-        background: white !important;
+        max-width: 1200px !important;
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
     }
     
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     
     html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
+        font-family: 'Inter', sans-serif !important;
     }
     
+    /* Header */
     .header {
         display: flex;
         align-items: center;
@@ -94,6 +101,7 @@ st.markdown("""
         background: white;
         padding: 1rem;
         border-radius: 1rem;
+        border: 1px solid #e2e8f0;
     }
     
     .logo {
@@ -106,32 +114,32 @@ st.markdown("""
         align-items: center;
         justify-content: center;
         font-size: 2rem;
-        box-shadow: 0 10px 18px -8px #0b2a3a;
+        box-shadow: 0 4px 6px -2px #cbd5e1;
     }
     
     .title h1 {
-        color: #103c51;
+        color: #0f172a;
         font-size: 2rem;
         font-weight: 600;
         margin: 0;
     }
     
     .title p {
-        color: #3c647a;
+        color: #475569;
         font-size: 0.9rem;
         margin: 0;
     }
     
+    /* Selector de mes */
     .month-selector {
         background: #f8fafc;
-        border-radius: 3rem;
+        border-radius: 2rem;
         padding: 0.8rem 2rem;
         display: flex;
         align-items: center;
         justify-content: space-between;
         margin-bottom: 2rem;
         border: 1px solid #e2e8f0;
-        box-shadow: 0 2px 8px -4px #cbd5e1;
     }
     
     .month-selector span {
@@ -140,12 +148,12 @@ st.markdown("""
         font-size: 1.3rem;
     }
     
+    /* Filas de resumen */
     .resumen-fila {
         background: #f8fafc;
-        border-radius: 1.5rem;
+        border-radius: 1rem;
         padding: 1.2rem 1.8rem;
         margin-bottom: 1rem;
-        box-shadow: 0 2px 8px -4px #cbd5e1;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -168,58 +176,87 @@ st.markdown("""
         color: #dc2626;
     }
     
+    /* Barra de progreso */
     .progress-container {
         background: #f8fafc;
-        border-radius: 1.5rem;
+        border-radius: 1rem;
         padding: 1.2rem 1.8rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 2px 8px -4px #cbd5e1;
+        margin-bottom: 2rem;
         border: 1px solid #e2e8f0;
     }
     
     .progress-header {
         display: flex;
         justify-content: space-between;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.8rem;
         color: #475569;
         font-weight: 500;
     }
     
-    .export-button {
-        display: flex;
-        justify-content: flex-end;
-        margin-bottom: 1rem;
+    .progress-bar {
+        background: #e2e8f0;
+        height: 12px;
+        border-radius: 20px;
+        width: 100%;
     }
     
+    .progress-fill {
+        height: 12px;
+        border-radius: 20px;
+        transition: width 0.3s;
+    }
+    
+    /* Footer */
     .footer {
         text-align: center;
         color: #64748b;
         font-size: 0.8rem;
         margin-top: 2rem;
-        padding-top: 1.5rem;
+        padding-top: 2rem;
         border-top: 1px solid #e2e8f0;
     }
     
+    /* Botones */
     .stButton > button {
         background: #2563eb !important;
         color: white !important;
         border: none !important;
-        padding: 0.8rem 2rem !important;
+        padding: 0.8rem 1.5rem !important;
         border-radius: 2rem !important;
         font-weight: 600 !important;
         font-size: 1rem !important;
         width: 100% !important;
         transition: all 0.2s !important;
-        box-shadow: 0 4px 12px -6px #1e40af !important;
     }
     
     .stButton > button:hover {
         background: #1d4ed8 !important;
-        transform: translateY(-2px);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px -2px #94a3b8 !important;
     }
     
     .stButton > button[kind="secondary"] {
         background: #ef4444 !important;
+    }
+    
+    .stButton > button[kind="secondary"]:hover {
+        background: #dc2626 !important;
+    }
+    
+    /* Inputs */
+    .stSelectbox > div > div,
+    .stDateInput > div > div,
+    .stNumberInput > div > div,
+    .stTextInput > div > div {
+        border-radius: 0.8rem !important;
+        border: 1px solid #e2e8f0 !important;
+        background: #f8fafc !important;
+    }
+    
+    /* Dividers */
+    hr {
+        margin: 1rem 0 !important;
+        border-color: #e2e8f0 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -250,28 +287,14 @@ def guardar_gastos(gastos):
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 # ============================================
-# FUNCIÓN PARA EXPORTAR A EXCEL
+# FUNCIÓN PARA EXPORTAR A CSV
 # ============================================
-def exportar_a_excel():
-    # Crear DataFrame con todos los gastos
+def exportar_a_csv():
     if st.session_state.gastos:
         df = pd.DataFrame(st.session_state.gastos)
         df['fecha'] = pd.to_datetime(df['fecha']).dt.strftime('%Y-%m-%d')
         df = df.sort_values('fecha', ascending=False)
-        
-        # Crear archivo Excel en memoria
-        output = BytesIO()
-        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False, sheet_name='Gastos')
-            
-            # Ajustar ancho de columnas
-            worksheet = writer.sheets['Gastos']
-            for column in df:
-                column_width = max(df[column].astype(str).map(len).max(), len(column))
-                col_idx = df.columns.get_loc(column)
-                worksheet.column_dimensions[chr(65 + col_idx)].width = min(column_width + 2, 30)
-        
-        return output.getvalue()
+        return df.to_csv(index=False, encoding='utf-8-sig')
     return None
 
 # ============================================
@@ -321,20 +344,18 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Botón de exportar a Excel
+# Botón de exportar
 col_exp1, col_exp2, col_exp3 = st.columns([1, 1, 1])
 with col_exp2:
-    excel_data = exportar_a_excel()
-    if excel_data:
+    csv_data = exportar_a_csv()
+    if csv_data:
         st.download_button(
-            label="📥 Exportar a Excel",
-            data=excel_data,
-            file_name=f"gastos_{datetime.now().strftime('%Y%m')}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            label="📥 Exportar a CSV",
+            data=csv_data,
+            file_name=f"gastos_{datetime.now().strftime('%Y%m')}.csv",
+            mime="text/csv",
             use_container_width=True
         )
-    else:
-        st.button("📥 Exportar a Excel", disabled=True, use_container_width=True)
 
 # Selector de mes
 col1, col2, col3 = st.columns([1, 3, 1])
@@ -389,12 +410,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # Barra de progreso
-fill_class = ''
-if porcentaje > 100:
-    fill_class = 'danger'
-elif porcentaje > 80:
-    fill_class = 'warning'
-
+color_barra = '#dc2626' if porcentaje > 100 else '#f59e0b' if porcentaje > 80 else '#2563eb'
 st.markdown(f"""
 <div class="progress-container">
     <div class="progress-header">
@@ -402,7 +418,7 @@ st.markdown(f"""
         <span>${PRESUPUESTOS['Alimentación']['diario']:.2f}/día</span>
     </div>
     <div class="progress-bar">
-        <div class="progress-fill {fill_class}" style="background-color:{'#dc2626' if porcentaje>100 else '#f59e0b' if porcentaje>80 else '#2563eb'}; height:12px; border-radius:20px; width:{min(porcentaje, 100)}%"></div>
+        <div class="progress-fill" style="background-color: {color_barra}; width: {min(porcentaje, 100)}%;"></div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -425,7 +441,7 @@ for categoria, datos in PRESUPUESTOS.items():
                 st.markdown(f"**{format_money(gastado)}**")
                 st.markdown(f"de {format_money(presupuesto['monto'])}")
             
-            # Barra de progreso
+            # Barra de progreso individual
             progreso = min(gastado / presupuesto['monto'], 1.0) if presupuesto['monto'] > 0 else 0
             color = '#dc2626' if (gastado / presupuesto['monto']) > 1.0 else '#f59e0b' if (gastado / presupuesto['monto']) > 0.8 else '#10b981'
             st.markdown(f"""
@@ -436,21 +452,21 @@ for categoria, datos in PRESUPUESTOS.items():
             st.divider()
 
 # ============================================
-# FORMULARIO PARA AGREGAR GASTOS
+# FORMULARIO
 # ============================================
 st.markdown("### ➕ Agregar / Corregir gasto")
 
 col1, col2 = st.columns(2)
 with col1:
     fecha = st.date_input("Fecha", datetime.now())
-    categoria_sel = st.selectbox("Categoría", list(PRESUPUESTOS.keys()), key="cat_select")
+    categoria_sel = st.selectbox("Categoría", list(PRESUPUESTOS.keys()))
     
 with col2:
     subcategorias = list(PRESUPUESTOS[categoria_sel]['subcategorias'].keys())
-    subcategoria_sel = st.selectbox("Subcategoría", subcategorias, key="sub_select")
-    monto = st.number_input("Monto $ (positivo o negativo)", value=100, step=1, key="monto_input")
+    subcategoria_sel = st.selectbox("Subcategoría", subcategorias)
+    monto = st.number_input("Monto $", value=100, step=1)
 
-descripcion = st.text_input("Descripción", key="desc_input")
+descripcion = st.text_input("Descripción")
 
 col_b1, col_b2, col_b3 = st.columns(3)
 with col_b1:
@@ -465,10 +481,9 @@ with col_b1:
             }
             st.session_state.gastos.append(nuevo_gasto)
             guardar_gastos(st.session_state.gastos)
-            st.success("✅ Gasto guardado")
             st.rerun()
         else:
-            st.error("❌ Completa todos los campos")
+            st.error("Completa todos los campos")
 
 with col_b2:
     if st.button("🔄 Reiniciar mes", use_container_width=True, type="secondary"):
@@ -476,7 +491,6 @@ with col_b2:
                                    if not (g['fecha'].year == st.session_state.current_month.year 
                                           and g['fecha'].month == st.session_state.current_month.month)]
         guardar_gastos(st.session_state.gastos)
-        st.success("✅ Mes reiniciado")
         st.rerun()
 
 # ============================================
@@ -496,7 +510,7 @@ if gastos_mes:
         with cols[2]:
             st.write(row['subcategoria'])
         with cols[3]:
-            st.write(row['descripcion'][:20] + ('...' if len(row['descripcion']) > 20 else ''))
+            st.write(row['descripcion'][:20])
         with cols[4]:
             st.write(f"**{format_money(row['monto'])}**")
 
@@ -506,7 +520,6 @@ if gastos_mes:
 st.markdown("""
 <div class="footer">
     <p>📧 contacto@optipension73.com · 📱 871 579 1810</p>
-    <p>✅ Datos guardados permanentemente · Cada mes independiente</p>
     <p>© 2026 · OptiPensión 73</p>
 </div>
 """, unsafe_allow_html=True)
