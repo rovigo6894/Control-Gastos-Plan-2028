@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from datetime import datetime
 import json
 import os
@@ -167,7 +168,6 @@ st.markdown("""
         background: linear-gradient(90deg, #f59e0b, #fbbf24);
     }
     
-    /* ALERTAS CORREGIDAS */
     .alert-container {
         background: white;
         border-radius: 1rem;
@@ -176,20 +176,20 @@ st.markdown("""
         box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
     }
     
-    .alert-title {
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 1px solid #e0e0e0;
-    }
-    
     .alert-danger {
         border-left: 4px solid #ef4444;
     }
     
     .alert-warning {
         border-left: 4px solid #f59e0b;
+    }
+    
+    .alert-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #e0e0e0;
     }
     
     .alert-item {
@@ -213,16 +213,14 @@ st.markdown("""
         font-weight: 500;
     }
     
-    .alert-amount {
-        font-weight: 600;
-    }
-    
     .alert-amount.exceeded {
         color: #dc2626;
+        font-weight: 600;
     }
     
     .alert-amount.warning {
         color: #d97706;
+        font-weight: 600;
     }
     
     .form-container {
@@ -238,6 +236,14 @@ st.markdown("""
         font-weight: 600;
         margin-bottom: 1.5rem;
         color: #333;
+    }
+    
+    .chart-container {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin: 2rem 0;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
     }
     
     .subcategoria-info {
@@ -351,7 +357,6 @@ def obtener_alertas():
         if gastos_cat > datos['total']:
             excedidos.append({
                 'nombre': cat,
-                'tipo': 'categoría',
                 'gastado': gastos_cat,
                 'limite': datos['total'],
                 'exceso': gastos_cat - datos['total']
@@ -359,7 +364,6 @@ def obtener_alertas():
         elif gastos_cat > datos['total'] * 0.8:
             cerca_limite.append({
                 'nombre': cat,
-                'tipo': 'categoría',
                 'gastado': gastos_cat,
                 'limite': datos['total'],
                 'restante': datos['total'] - gastos_cat
@@ -371,7 +375,6 @@ def obtener_alertas():
             if gastos_sub > sub_data['monto']:
                 excedidos.append({
                     'nombre': f"{cat} - {sub}",
-                    'tipo': 'subcategoría',
                     'gastado': gastos_sub,
                     'limite': sub_data['monto'],
                     'exceso': gastos_sub - sub_data['monto']
@@ -379,7 +382,6 @@ def obtener_alertas():
             elif gastos_sub > sub_data['monto'] * 0.8:
                 cerca_limite.append({
                     'nombre': f"{cat} - {sub}",
-                    'tipo': 'subcategoría',
                     'gastado': gastos_sub,
                     'limite': sub_data['monto'],
                     'restante': sub_data['monto'] - gastos_sub
@@ -394,37 +396,35 @@ st.markdown('<div class="main-title">💰 CONTROL DE GASTOS PRO</div>', unsafe_a
 st.markdown('<div class="sub-title">Ing. Roberto Villarreal · Plan Maestro 2026</div>', unsafe_allow_html=True)
 
 # ============================================
-# MOSTRAR ALERTAS (CORREGIDO)
+# ALERTAS
 # ============================================
 excedidos, cerca_limite = obtener_alertas()
 
 if excedidos:
-    st.markdown('<div class="alert-container alert-danger">', unsafe_allow_html=True)
-    st.markdown('<div class="alert-title">⚠️ PRESUPUESTOS EXCEDIDOS</div>', unsafe_allow_html=True)
-    
-    for item in excedidos:
-        st.markdown(f"""
-        <div class="alert-item exceeded">
-            <span class="alert-name">{item['nombre']}</span>
-            <span class="alert-amount exceeded">+${item['exceso']:,.0f} (${item['gastado']:,.0f}/${item['limite']:,.0f})</span>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+    with st.container():
+        st.markdown('<div class="alert-container alert-danger">', unsafe_allow_html=True)
+        st.markdown('<div class="alert-title">⚠️ PRESUPUESTOS EXCEDIDOS</div>', unsafe_allow_html=True)
+        for item in excedidos:
+            st.markdown(f"""
+            <div class="alert-item exceeded">
+                <span class="alert-name">{item['nombre']}</span>
+                <span class="alert-amount exceeded">+${item['exceso']:,.0f} (${item['gastado']:,.0f}/${item['limite']:,.0f})</span>
+            </div>
+            """, unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
 if cerca_limite:
-    st.markdown('<div class="alert-container alert-warning">', unsafe_allow_html=True)
-    st.markdown('<div class="alert-title">⚠️ CERCA DEL LÍMITE (80%)</div>', unsafe_allow_html=True)
-    
-    for item in cerca_limite:
-        st.markdown(f"""
-        <div class="alert-item warning">
-            <span class="alert-name">{item['nombre']}</span>
-            <span class="alert-amount warning">Te quedan ${item['restante']:,.0f} (${item['gastado']:,.0f}/{item['limite']:,.0f})</span>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+    with st.container():
+        st.markdown('<div class="alert-container alert-warning">', unsafe_allow_html=True)
+        st.markdown('<div class="alert-title">⚠️ CERCA DEL LÍMITE (80%)</div>', unsafe_allow_html=True)
+        for item in cerca_limite:
+            st.markdown(f"""
+            <div class="alert-item warning">
+                <span class="alert-name">{item['nombre']}</span>
+                <span class="alert-amount warning">${item['restante']:,.0f} restantes (${item['gastado']:,.0f}/${item['limite']:,.0f})</span>
+            </div>
+            """, unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # ============================================
 # MÉTRICAS
@@ -436,12 +436,7 @@ porcentaje = (total_gastado / PRESUPUESTO_TOTAL) * 100
 
 col1, col2, col3 = st.columns(3)
 
-# Clase para tarjeta de gastado
-clase_gastado = ""
-if total_gastado > PRESUPUESTO_TOTAL:
-    clase_gastado = "exceeded"
-elif total_gastado > PRESUPUESTO_TOTAL * 0.8:
-    clase_gastado = "warning"
+clase_gastado = "exceeded" if total_gastado > PRESUPUESTO_TOTAL else "warning" if total_gastado > PRESUPUESTO_TOTAL * 0.8 else ""
 
 with col1:
     st.markdown(f"""
@@ -473,11 +468,7 @@ with col3:
 # ============================================
 # BARRA DE PROGRESO
 # ============================================
-clase_progress = ""
-if porcentaje > 100:
-    clase_progress = "exceeded"
-elif porcentaje > 80:
-    clase_progress = "warning"
+clase_progress = "exceeded" if porcentaje > 100 else "warning" if porcentaje > 80 else ""
 
 st.markdown(f"""
 <div class="progress-container">
@@ -490,6 +481,77 @@ st.markdown(f"""
     </div>
 </div>
 """, unsafe_allow_html=True)
+
+# ============================================
+# GRÁFICAS
+# ============================================
+if st.session_state.gastos:
+    df = pd.DataFrame(st.session_state.gastos)
+    
+    # GRÁFICA 1: Distribución por categoría
+    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+    st.markdown('<div class="form-title">📊 DISTRIBUCIÓN POR CATEGORÍA</div>', unsafe_allow_html=True)
+    
+    cat_sum = df.groupby('categoria')['monto'].sum().reset_index()
+    fig1 = px.pie(cat_sum, values='monto', names='categoria', 
+                  title="Gastos por Categoría",
+                  color_discrete_sequence=px.colors.sequential.Blues_r)
+    fig1.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font_family="Inter",
+        showlegend=True,
+        height=400
+    )
+    st.plotly_chart(fig1, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # GRÁFICA 2: Evolución temporal
+    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+    st.markdown('<div class="form-title">📈 EVOLUCIÓN DE GASTOS</div>', unsafe_allow_html=True)
+    
+    df['fecha'] = pd.to_datetime(df['fecha'])
+    df_time = df.groupby('fecha')['monto'].sum().reset_index()
+    df_time = df_time.sort_values('fecha')
+    
+    fig2 = px.line(df_time, x='fecha', y='monto', 
+                   title="Gastos por Día",
+                   markers=True,
+                   line_shape='spline')
+    fig2.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font_family="Inter",
+        height=400,
+        xaxis_title="Fecha",
+        yaxis_title="Monto ($)"
+    )
+    st.plotly_chart(fig2, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # GRÁFICA 3: Barras por subcategoría (Top 10)
+    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+    st.markdown('<div class="form-title">📊 TOP 10 GASTOS POR SUBCATEGORÍA</div>', unsafe_allow_html=True)
+    
+    sub_sum = df.groupby(['categoria', 'subcategoria'])['monto'].sum().reset_index()
+    sub_sum['nombre'] = sub_sum['categoria'] + ' - ' + sub_sum['subcategoria']
+    sub_sum = sub_sum.nlargest(10, 'monto')
+    
+    fig3 = px.bar(sub_sum, x='monto', y='nombre', 
+                  orientation='h',
+                  title="Mayores Gastos",
+                  color='monto',
+                  color_continuous_scale='Blues')
+    fig3.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font_family="Inter",
+        height=400,
+        xaxis_title="Monto ($)",
+        yaxis_title=""
+    )
+    st.plotly_chart(fig3, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ============================================
 # FORMULARIO
@@ -528,35 +590,83 @@ with st.form("nuevo_gasto"):
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ============================================
-# RESUMEN
+# RESUMEN POR CATEGORÍA
 # ============================================
 if st.session_state.gastos:
     df = pd.DataFrame(st.session_state.gastos)
     
     st.markdown('<div class="expenses-table">', unsafe_allow_html=True)
-    st.markdown('<div class="form-title">📊 RESUMEN</div>', unsafe_allow_html=True)
+    st.markdown('<div class="form-title">📋 DETALLE POR CATEGORÍA</div>', unsafe_allow_html=True)
     
     for cat, datos in PRESUPUESTOS.items():
         gastos_cat = df[df['categoria'] == cat]['monto'].sum() if not df.empty else 0
-        porcentaje_cat = (gastos_cat / datos['total']) * 100
+        porcentaje_cat = (gastos_cat / datos['total']) * 100 if datos['total'] > 0 else 0
+        
+        # Emoji según nivel
+        if gastos_cat > datos['total']:
+            emoji_cat = "🔴"
+        elif gastos_cat > datos['total'] * 0.8:
+            emoji_cat = "🟡"
+        else:
+            emoji_cat = "🟢"
         
         col1, col2 = st.columns([3, 1])
         with col1:
-            st.markdown(f"**{cat}**")
-            for sub in datos['subcategorias'].keys():
+            st.markdown(f"**{emoji_cat} {cat}**")
+            
+            # Subcategorías
+            for sub, sub_data in datos['subcategorias'].items():
                 gastos_sub = df[(df['categoria'] == cat) & (df['subcategoria'] == sub)]['monto'].sum() if not df.empty else 0
-                if gastos_sub != 0:
-                    limite_sub = datos['subcategorias'][sub]['monto']
-                    emoji = "🔴" if gastos_sub > limite_sub else "🟡" if gastos_sub > limite_sub * 0.8 else "🟢"
-                    st.markdown(f"&nbsp;&nbsp;{emoji} {sub}: ${gastos_sub:,.0f}/${limite_sub:,.0f}")
+                if gastos_sub != 0 or True:  # Mostrar todas para contexto
+                    if gastos_sub > sub_data['monto']:
+                        emoji_sub = "🔴"
+                    elif gastos_sub > sub_data['monto'] * 0.8:
+                        emoji_sub = "🟡"
+                    else:
+                        emoji_sub = "🟢"
+                    
+                    st.markdown(f"&nbsp;&nbsp;{emoji_sub} {sub}: ${gastos_sub:,.2f} / ${sub_data['monto']:,.2f}")
         
         with col2:
             st.markdown(f"**${gastos_cat:,.0f}**")
             st.markdown(f"*{porcentaje_cat:.1f}%*")
         
+        # Barra de progreso de categoría
+        color_bar = "#ef4444" if gastos_cat > datos['total'] else "#f59e0b" if gastos_cat > datos['total'] * 0.8 else "#10b981"
+        st.markdown(f"""
+        <div style="height: 8px; background: #e0e0e0; border-radius: 4px; margin: 10px 0;">
+            <div style="height: 8px; width: {min(porcentaje_cat, 100)}%; background: {color_bar}; border-radius: 4px;"></div>
+        </div>
+        """, unsafe_allow_html=True)
+        
         st.divider()
     
     st.markdown('</div>', unsafe_allow_html=True)
+
+# ============================================
+# ÚLTIMOS GASTOS
+# ============================================
+if st.session_state.gastos:
+    st.markdown('<div class="expenses-table">', unsafe_allow_html=True)
+    st.markdown('<div class="form-title">📋 ÚLTIMOS 10 GASTOS</div>', unsafe_allow_html=True)
+    
+    df_show = pd.DataFrame(st.session_state.gastos[-10:][::-1])
+    df_show['fecha'] = pd.to_datetime(df_show['fecha']).dt.strftime('%d/%m/%Y')
+    df_show['monto'] = df_show['monto'].apply(lambda x: f"${x:,.2f}")
+    
+    st.dataframe(df_show[['fecha', 'categoria', 'subcategoria', 'descripcion', 'monto']], 
+                 use_container_width=True, hide_index=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# ============================================
+# BOTÓN REINICIAR
+# ============================================
+col1, col2, col3 = st.columns(3)
+with col2:
+    if st.button("🗑️ REINICIAR DATOS"):
+        st.session_state.gastos = []
+        guardar_gastos([])
+        st.rerun()
 
 # ============================================
 # FOOTER
@@ -564,7 +674,7 @@ if st.session_state.gastos:
 st.markdown("""
 <div class="footer">
     <p>📧 contacto@optipension73.com · 📱 871 579 1810</p>
-    <p>⚡ Versión PRO · Alertas automáticas</p>
+    <p>⚡ Versión PRO · Gráficas interactivas · Alertas automáticas</p>
     <p>© 2026 · OptiPensión 73</p>
 </div>
 """, unsafe_allow_html=True)
