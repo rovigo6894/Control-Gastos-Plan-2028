@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
 from datetime import datetime
 import json
 import os
@@ -26,7 +25,7 @@ hide_streamlit_style = """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # ============================================
-# CSS PERSONALIZADO (LA BELLEZA DEL HTML)
+# CSS PERSONALIZADO (FONDO MÁS CLARO Y ELEGANTE)
 # ============================================
 st.markdown("""
 <style>
@@ -37,17 +36,17 @@ st.markdown("""
     }
     
     .main {
-        background: linear-gradient(145deg, #f0f5fa 0%, #e6ecf2 100%);
+        background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%);
         padding: 1rem;
     }
     
     .card {
-        background: rgba(255,255,255,0.9);
-        backdrop-filter: blur(10px);
-        border-radius: 2.5rem;
+        background: white;
+        border-radius: 2rem;
         padding: 2rem;
-        box-shadow: 0 25px 45px -15px #1a3b4e;
+        box-shadow: 0 20px 35px -10px rgba(0,0,0,0.1);
         margin-bottom: 1.5rem;
+        border: 1px solid rgba(255,255,255,0.8);
     }
     
     .header {
@@ -91,29 +90,30 @@ st.markdown("""
         align-items: center;
         justify-content: space-between;
         margin-bottom: 2rem;
-        border: 1px solid #caddf0;
-        box-shadow: 0 4px 12px -6px #809aaf;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 12px -6px #94a3b8;
     }
     
     .month-selector span {
         font-weight: 600;
-        color: #1a4d6b;
+        color: #1e293b;
         font-size: 1.3rem;
     }
     
     .resumen-fila {
         background: white;
         border-radius: 1.5rem;
-        padding: 1.2rem 1.5rem;
+        padding: 1.2rem 1.8rem;
         margin-bottom: 1rem;
-        box-shadow: 0 8px 16px -10px #7f9bb3;
+        box-shadow: 0 8px 16px -10px #94a3b8;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        border: 1px solid #f1f5f9;
     }
     
     .resumen-label {
-        color: #3c5a70;
+        color: #475569;
         font-size: 1.1rem;
         font-weight: 500;
     }
@@ -121,30 +121,32 @@ st.markdown("""
     .resumen-number {
         font-size: 2rem;
         font-weight: 700;
-        color: #103c51;
+        color: #0f172a;
     }
     
     .resumen-number.warning {
-        color: #d32f2f;
+        color: #dc2626;
     }
     
     .progress-container {
         background: white;
         border-radius: 1.5rem;
-        padding: 1.2rem 1.5rem;
+        padding: 1.2rem 1.8rem;
         margin-bottom: 1rem;
-        box-shadow: 0 8px 16px -10px #7f9bb3;
+        box-shadow: 0 8px 16px -10px #94a3b8;
+        border: 1px solid #f1f5f9;
     }
     
     .progress-header {
         display: flex;
         justify-content: space-between;
         margin-bottom: 0.5rem;
-        color: #2f5777;
+        color: #475569;
+        font-weight: 500;
     }
     
     .progress-bar {
-        background: #e4ecf3;
+        background: #e2e8f0;
         height: 12px;
         border-radius: 20px;
         width: 100%;
@@ -152,21 +154,22 @@ st.markdown("""
     
     .progress-fill {
         height: 12px;
-        background: #146b9e;
+        background: #2563eb;
         border-radius: 20px;
         width: 0%;
         transition: width 0.3s;
     }
     
-    .progress-fill.warning { background: #f57c00; }
-    .progress-fill.danger { background: #d32f2f; }
+    .progress-fill.warning { background: #f59e0b; }
+    .progress-fill.danger { background: #dc2626; }
     
     .categoria {
         background: white;
         border-radius: 1.5rem;
         padding: 1.5rem;
         margin-bottom: 1.5rem;
-        box-shadow: 0 8px 16px -10px #7f9bb3;
+        box-shadow: 0 8px 16px -10px #94a3b8;
+        border: 1px solid #f1f5f9;
     }
     
     .categoria-header {
@@ -175,23 +178,23 @@ st.markdown("""
         align-items: center;
         margin-bottom: 1rem;
         padding-bottom: 0.5rem;
-        border-bottom: 2px solid #e4ecf3;
+        border-bottom: 2px solid #e2e8f0;
     }
     
     .categoria-nombre {
         font-size: 1.2rem;
         font-weight: 600;
-        color: #103c51;
+        color: #0f172a;
     }
     
     .categoria-total {
         font-weight: 600;
-        color: #146b9e;
+        color: #2563eb;
     }
     
     .subcategoria {
         padding: 1rem 0;
-        border-bottom: 1px solid #e4ecf3;
+        border-bottom: 1px solid #f1f5f9;
     }
     
     .subcategoria:last-child {
@@ -207,13 +210,14 @@ st.markdown("""
     
     .subcategoria-nombre {
         font-weight: 600;
-        color: #1a4d6b;
+        color: #1e293b;
     }
     
     .subcategoria-detalle {
         font-size: 0.8rem;
-        color: #578197;
+        color: #64748b;
         margin-bottom: 0.5rem;
+        font-style: italic;
     }
     
     .subcategoria-montos {
@@ -226,16 +230,17 @@ st.markdown("""
     .subcategoria-gastado {
         font-size: 1.3rem;
         font-weight: 700;
-        color: #103c51;
+        color: #0f172a;
     }
     
     .subcategoria-presupuesto {
-        color: #578197;
+        color: #64748b;
+        font-size: 0.95rem;
     }
     
     .mini-progress {
         height: 8px;
-        background: #e4ecf3;
+        background: #e2e8f0;
         border-radius: 10px;
         width: 100%;
         margin: 0.5rem 0;
@@ -248,9 +253,9 @@ st.markdown("""
         transition: width 0.3s;
     }
     
-    .fill-green { background: #2e7d32; }
-    .fill-yellow { background: #f57c00; }
-    .fill-red { background: #d32f2f; }
+    .fill-green { background: #10b981; }
+    .fill-yellow { background: #f59e0b; }
+    .fill-red { background: #ef4444; }
     
     .status-badge {
         padding: 0.3rem 1rem;
@@ -260,16 +265,17 @@ st.markdown("""
         display: inline-block;
     }
     
-    .status-good { background: #e8f5e9; color: #2e7d32; }
-    .status-warning { background: #fff3e0; color: #f57c00; }
-    .status-danger { background: #ffebee; color: #d32f2f; }
+    .status-good { background: #d1fae5; color: #047857; }
+    .status-warning { background: #fed7aa; color: #b45309; }
+    .status-danger { background: #fee2e2; color: #b91c1c; }
     
     .form-card {
         background: white;
         border-radius: 1.5rem;
         padding: 1.5rem;
         margin: 2rem 0;
-        box-shadow: 0 8px 16px -10px #7f9bb3;
+        box-shadow: 0 8px 16px -10px #94a3b8;
+        border: 1px solid #f1f5f9;
     }
     
     .form-title {
@@ -277,21 +283,22 @@ st.markdown("""
         justify-content: space-between;
         align-items: center;
         margin-bottom: 1rem;
-        color: #103c51;
+        color: #0f172a;
         font-weight: 600;
+        font-size: 1.1rem;
     }
     
     .footer {
         text-align: center;
-        color: #456476;
+        color: #64748b;
         font-size: 0.8rem;
         margin-top: 2rem;
         padding-top: 1.5rem;
-        border-top: 1px solid #c9deef;
+        border-top: 1px solid #e2e8f0;
     }
     
     .stButton > button {
-        background: #146b9e !important;
+        background: #2563eb !important;
         color: white !important;
         border: none !important;
         padding: 0.8rem 2rem !important;
@@ -299,30 +306,42 @@ st.markdown("""
         font-weight: 600 !important;
         font-size: 1rem !important;
         width: 100% !important;
-        transition: background 0.2s !important;
+        transition: all 0.2s !important;
+        box-shadow: 0 4px 12px -6px #1e40af !important;
     }
     
     .stButton > button:hover {
-        background: #0f5a85 !important;
+        background: #1d4ed8 !important;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px -6px #1e3a8a !important;
     }
     
     .stButton > button[kind="secondary"] {
-        background: #d32f2f !important;
+        background: #ef4444 !important;
+    }
+    
+    .stButton > button[kind="secondary"]:hover {
+        background: #dc2626 !important;
     }
     
     .stSelectbox > div > div {
         border-radius: 1rem !important;
-        border: 1px solid #caddf0 !important;
+        border: 1px solid #e2e8f0 !important;
     }
     
     .stDateInput > div > div {
         border-radius: 1rem !important;
-        border: 1px solid #caddf0 !important;
+        border: 1px solid #e2e8f0 !important;
     }
     
     .stNumberInput > div > div {
         border-radius: 1rem !important;
-        border: 1px solid #caddf0 !important;
+        border: 1px solid #e2e8f0 !important;
+    }
+    
+    .stTextInput > div > div {
+        border-radius: 1rem !important;
+        border: 1px solid #e2e8f0 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -363,15 +382,13 @@ PRESUPUESTO_TOTAL = 13100
 ARCHIVO_DATOS = "gastos.json"
 
 # ============================================
-# FUNCIONES DE PERSISTENCIA (ARCHIVO JSON)
+# FUNCIONES DE PERSISTENCIA
 # ============================================
 def cargar_gastos():
-    """Carga los gastos desde el archivo JSON"""
     if os.path.exists(ARCHIVO_DATOS):
         try:
             with open(ARCHIVO_DATOS, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                # Convertir fechas de string a datetime
                 for gasto in data:
                     gasto['fecha'] = datetime.fromisoformat(gasto['fecha'])
                 return data
@@ -380,8 +397,6 @@ def cargar_gastos():
     return []
 
 def guardar_gastos(gastos):
-    """Guarda los gastos en el archivo JSON"""
-    # Convertir fechas a string para JSON
     data = []
     for gasto in gastos:
         g = gasto.copy()
@@ -392,7 +407,7 @@ def guardar_gastos(gastos):
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 # ============================================
-# INICIALIZAR SESSION STATE (con datos del archivo)
+# INICIALIZAR SESSION STATE
 # ============================================
 if 'gastos' not in st.session_state:
     st.session_state.gastos = cargar_gastos()
@@ -444,8 +459,7 @@ with col1:
     if st.button("←", key="prev_month"):
         if st.session_state.current_month.month == 1:
             st.session_state.current_month = st.session_state.current_month.replace(
-                month=12, 
-                year=st.session_state.current_month.year - 1
+                month=12, year=st.session_state.current_month.year - 1
             )
         else:
             st.session_state.current_month = st.session_state.current_month.replace(
@@ -464,8 +478,7 @@ with col3:
     if st.button("→", key="next_month"):
         if st.session_state.current_month.month == 12:
             st.session_state.current_month = st.session_state.current_month.replace(
-                month=1, 
-                year=st.session_state.current_month.year + 1
+                month=1, year=st.session_state.current_month.year + 1
             )
         else:
             st.session_state.current_month = st.session_state.current_month.replace(
@@ -540,6 +553,7 @@ for categoria, datos in PRESUPUESTOS.items():
                 status_class = 'status-warning'
                 status_text = 'Cuidado'
             
+            # Mostrar cada subcategoría con HTML seguro
             st.markdown(f"""
             <div class="subcategoria">
                 <div class="subcategoria-header">
@@ -576,12 +590,10 @@ with col2:
 
 descripcion = st.text_input("Descripción")
 
-# Botones en fila
 col_b1, col_b2, col_b3 = st.columns([1, 1, 1])
 with col_b2:
     if st.button("💾 Guardar gasto", use_container_width=True):
         if fecha and categoria_sel and subcategoria_sel and descripcion and monto != 0:
-            # Crear nuevo gasto
             nuevo_gasto = {
                 'fecha': datetime.combine(fecha, datetime.min.time()),
                 'categoria': categoria_sel,
@@ -590,17 +602,14 @@ with col_b2:
                 'monto': monto
             }
             st.session_state.gastos.append(nuevo_gasto)
-            # Guardar en archivo
             guardar_gastos(st.session_state.gastos)
             st.success("✅ Gasto guardado permanentemente")
             st.rerun()
         else:
             st.error("❌ Todos los campos son obligatorios")
 
-# Botón para reiniciar mes
 with col_b3:
     if st.button("🔄 Reiniciar mes", use_container_width=True, type="secondary"):
-        # Eliminar solo gastos del mes actual
         st.session_state.gastos = [g for g in st.session_state.gastos 
                                    if not (g['fecha'].year == st.session_state.current_month.year 
                                           and g['fecha'].month == st.session_state.current_month.month)]
@@ -621,18 +630,17 @@ if gastos_mes:
     df['fecha_str'] = df['fecha'].dt.strftime('%d/%m')
     df['monto_str'] = df['monto'].apply(lambda x: format_money(x))
     
-    # Mostrar tabla elegante
     for _, row in df.iterrows():
-        col_f, col_c, col_s, col_d, col_m = st.columns([1, 1.5, 1.5, 3, 1.5])
-        with col_f:
-            st.write(row['fecha_str'])
-        with col_c:
+        cols = st.columns([1, 1.5, 1.5, 3, 1.5])
+        with cols[0]:
+            st.write(f"**{row['fecha_str']}**")
+        with cols[1]:
             st.write(row['categoria'])
-        with col_s:
+        with cols[2]:
             st.write(row['subcategoria'])
-        with col_d:
-            st.write(row['descripcion'][:20] + '...' if len(row['descripcion']) > 20 else row['descripcion'])
-        with col_m:
+        with cols[3]:
+            st.write(row['descripcion'][:25] + '...' if len(row['descripcion']) > 25 else row['descripcion'])
+        with cols[4]:
             st.write(f"**{row['monto_str']}**")
 
 # ============================================
