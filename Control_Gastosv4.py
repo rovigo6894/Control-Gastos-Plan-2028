@@ -59,320 +59,6 @@ PRESUPUESTO_TOTAL = 13100
 ARCHIVO_DATOS = "gastos.json"
 
 # ============================================
-# CSS ORIGINAL
-# ============================================
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
-    }
-    
-    .main {
-        background: linear-gradient(145deg, #1a2f3a 0%, #0f2a35 100%);
-        padding: 1rem;
-    }
-    
-    .header {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-    
-    .logo {
-        background: #0f3b4f;
-        color: white;
-        width: 60px;
-        height: 60px;
-        border-radius: 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2rem;
-        box-shadow: 0 10px 18px -8px #0b2a3a;
-    }
-    
-    .title h1 {
-        color: #103c51;
-        font-size: 2rem;
-        font-weight: 600;
-        margin: 0;
-    }
-    
-    .title p {
-        color: #3c647a;
-        font-size: 0.9rem;
-        margin: 0;
-    }
-    
-    .month-selector {
-        background: white;
-        border-radius: 3rem;
-        padding: 0.8rem 2rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 2rem;
-        border: 1px solid #caddf0;
-        box-shadow: 0 4px 12px -6px #809aaf;
-    }
-    
-    .month-selector span {
-        font-weight: 600;
-        color: #1a4d6b;
-        font-size: 1.3rem;
-    }
-    
-    .resumen-fila {
-        background: white;
-        border-radius: 1.5rem;
-        padding: 1.2rem 1.8rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 8px 16px -10px #7f9bb3;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border: 1px solid #f1f5f9;
-    }
-    
-    .resumen-label {
-        color: #3c5a70;
-        font-size: 1.1rem;
-        font-weight: 500;
-    }
-    
-    .resumen-number {
-        font-size: 2rem;
-        font-weight: 700;
-        color: #103c51;
-    }
-    
-    .resumen-number.warning {
-        color: #dc2626;
-    }
-    
-    .progress-container {
-        background: white;
-        border-radius: 1.5rem;
-        padding: 1.2rem 1.8rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 8px 16px -10px #7f9bb3;
-        border: 1px solid #f1f5f9;
-    }
-    
-    .progress-header {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 0.5rem;
-        color: #2f5777;
-        font-weight: 500;
-    }
-    
-    .progress-bar {
-        background: #e4ecf3;
-        height: 12px;
-        border-radius: 20px;
-        width: 100%;
-    }
-    
-    .progress-fill {
-        height: 12px;
-        background: #2563eb;
-        border-radius: 20px;
-        width: 0%;
-        transition: width 0.3s;
-    }
-    
-    .progress-fill.warning { background: #f59e0b; }
-    .progress-fill.danger { background: #dc2626; }
-    
-    .categoria {
-        background: white;
-        border-radius: 1.5rem;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 8px 16px -10px #7f9bb3;
-        border: 1px solid #f1f5f9;
-    }
-    
-    .categoria-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 2px solid #e4ecf3;
-    }
-    
-    .categoria-nombre {
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: #0f172a;
-    }
-    
-    .categoria-total {
-        font-weight: 600;
-        color: #2563eb;
-    }
-    
-    .subcategoria {
-        padding: 1rem 0;
-        border-bottom: 1px solid #f1f5f9;
-    }
-    
-    .subcategoria:last-child {
-        border-bottom: none;
-    }
-    
-    .subcategoria-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 0.5rem;
-    }
-    
-    .subcategoria-nombre {
-        font-weight: 600;
-        color: #1e293b;
-    }
-    
-    .subcategoria-detalle {
-        font-size: 0.8rem;
-        color: #64748b;
-        margin-bottom: 0.5rem;
-        font-style: italic;
-    }
-    
-    .subcategoria-montos {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin: 0.5rem 0;
-        padding: 0.5rem 0;
-    }
-    
-    .subcategoria-gastado {
-        font-size: 1.3rem;
-        font-weight: 700;
-        color: #0f172a;
-    }
-    
-    .subcategoria-presupuesto {
-        color: #64748b;
-        font-size: 0.95rem;
-    }
-    
-    .mini-progress {
-        height: 8px;
-        background: #e2e8f0;
-        border-radius: 10px;
-        width: 100%;
-        margin: 0.5rem 0;
-    }
-    
-    .mini-fill {
-        height: 8px;
-        border-radius: 10px;
-        width: 0%;
-        transition: width 0.3s;
-    }
-    
-    .fill-green { background: #10b981; }
-    .fill-yellow { background: #f59e0b; }
-    .fill-red { background: #ef4444; }
-    
-    .status-badge {
-        padding: 0.3rem 1rem;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        display: inline-block;
-    }
-    
-    .status-good { background: #d1fae5; color: #047857; }
-    .status-warning { background: #fed7aa; color: #b45309; }
-    .status-danger { background: #fee2e2; color: #b91c1c; }
-    
-    .form-card {
-        background: white;
-        border-radius: 1.5rem;
-        padding: 1.5rem;
-        margin: 2rem 0;
-        box-shadow: 0 8px 16px -10px #7f9bb3;
-        border: 1px solid #f1f5f9;
-    }
-    
-    .form-title {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
-        color: #0f172a;
-        font-weight: 600;
-        font-size: 1.1rem;
-    }
-    
-    .footer {
-        text-align: center;
-        color: #64748b;
-        font-size: 0.8rem;
-        margin-top: 2rem;
-        padding-top: 1.5rem;
-        border-top: 1px solid #c9deef;
-    }
-    
-    .stButton > button {
-        background: #2563eb !important;
-        color: white !important;
-        border: none !important;
-        padding: 0.8rem 2rem !important;
-        border-radius: 2rem !important;
-        font-weight: 600 !important;
-        font-size: 1rem !important;
-        width: 100% !important;
-        transition: all 0.2s !important;
-        box-shadow: 0 4px 12px -6px #1e40af !important;
-    }
-    
-    .stButton > button:hover {
-        background: #1d4ed8 !important;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 15px -6px #1e3a8a !important;
-    }
-    
-    .stButton > button[kind="secondary"] {
-        background: #ef4444 !important;
-    }
-    
-    .stButton > button[kind="secondary"]:hover {
-        background: #dc2626 !important;
-    }
-    
-    .stSelectbox > div > div {
-        border-radius: 1rem !important;
-        border: 1px solid #caddf0 !important;
-    }
-    
-    .stDateInput > div > div {
-        border-radius: 1rem !important;
-        border: 1px solid #caddf0 !important;
-    }
-    
-    .stNumberInput > div > div {
-        border-radius: 1rem !important;
-        border: 1px solid #caddf0 !important;
-    }
-    
-    .stTextInput > div > div {
-        border-radius: 1rem !important;
-        border: 1px solid #caddf0 !important;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# ============================================
 # FUNCIONES DE PERSISTENCIA
 # ============================================
 def cargar_gastos():
@@ -441,10 +127,546 @@ def calcular_totales():
     return total, restante, porcentaje
 
 # ============================================
+# CSS MEJORADO CON ANIMACIONES Y EFECTOS
+# ============================================
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
+    
+    /* Fondo con gradiente mejorado */
+    .main {
+        background: linear-gradient(145deg, #0b1c26 0%, #1a2f3a 50%, #0f2a35 100%);
+        padding: 1rem;
+        position: relative;
+    }
+    
+    .main::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 200px;
+        background: radial-gradient(circle at 50% 0%, rgba(37,99,235,0.15), transparent 70%);
+        pointer-events: none;
+    }
+    
+    /* Animaciones de entrada */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Header */
+    .header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        animation: fadeInUp 0.5s ease-out;
+    }
+    
+    .logo {
+        background: linear-gradient(135deg, #0f3b4f, #1a5f7a);
+        color: white;
+        width: 70px;
+        height: 70px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.2rem;
+        box-shadow: 0 15px 25px -10px #00000060;
+        border: 1px solid rgba(255,255,255,0.1);
+        backdrop-filter: blur(5px);
+    }
+    
+    .title h1 {
+        background: linear-gradient(135deg, #ffffff, #94a3b8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 2.2rem;
+        font-weight: 700;
+        margin: 0;
+    }
+    
+    .title p {
+        color: #94a3b8;
+        font-size: 0.9rem;
+        margin: 0;
+    }
+    
+    /* Selector de mes */
+    .month-selector {
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 3rem;
+        padding: 0.8rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        border: 1px solid rgba(255,255,255,0.2);
+        box-shadow: 0 10px 25px -10px #000000;
+        animation: fadeInUp 0.5s ease-out 0.1s both;
+    }
+    
+    .month-selector span {
+        font-weight: 600;
+        color: #1a4d6b;
+        font-size: 1.3rem;
+    }
+    
+    .month-selector button {
+        background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        font-size: 1.3rem;
+        cursor: pointer;
+        color: #0f172a;
+        font-weight: bold;
+        transition: all 0.3s;
+        box-shadow: 0 4px 10px -4px #00000040;
+    }
+    
+    .month-selector button:hover {
+        transform: scale(1.1);
+        box-shadow: 0 8px 15px -6px #000000;
+    }
+    
+    /* Tarjetas de resumen mejoradas */
+    .resumen-fila {
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 1.5rem;
+        padding: 1.2rem 1.8rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 15px 30px -12px #000000;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border: 1px solid rgba(255,255,255,0.1);
+        transition: all 0.3s ease;
+        animation: fadeInUp 0.5s ease-out;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .resumen-fila:hover {
+        transform: translateY(-3px) scale(1.01);
+        box-shadow: 0 25px 40px -15px #000000;
+        border-color: rgba(37,99,235,0.3);
+    }
+    
+    .resumen-fila::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+        transform: translateX(-100%);
+        transition: transform 0.6s;
+    }
+    
+    .resumen-fila:hover::after {
+        transform: translateX(100%);
+    }
+    
+    .resumen-label {
+        color: #475569;
+        font-size: 1.1rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .resumen-number {
+        font-size: 2rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #0f172a, #1e293b);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    
+    .resumen-number.warning {
+        background: linear-gradient(135deg, #dc2626, #ef4444);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    
+    /* Barra de progreso animada */
+    .progress-container {
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 1.5rem;
+        padding: 1.2rem 1.8rem;
+        margin-bottom: 2rem;
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 15px 30px -12px #000000;
+        animation: fadeInUp 0.5s ease-out 0.2s both;
+    }
+    
+    .progress-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.8rem;
+        color: #94a3b8;
+        font-weight: 500;
+    }
+    
+    .progress-bar {
+        background: rgba(226,232,240,0.3);
+        height: 14px;
+        border-radius: 20px;
+        width: 100%;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .progress-fill {
+        height: 14px;
+        background: linear-gradient(90deg, #2563eb, #3b82f6);
+        border-radius: 20px;
+        width: 0%;
+        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .progress-fill::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        animation: shimmer 2s infinite;
+    }
+    
+    .progress-fill.warning {
+        background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    }
+    
+    .progress-fill.danger {
+        background: linear-gradient(90deg, #dc2626, #ef4444);
+    }
+    
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+    
+    /* Categorías mejoradas */
+    .categoria {
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 2rem;
+        padding: 1.8rem;
+        margin-bottom: 1.8rem;
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 20px 35px -15px #000000;
+        animation: fadeInUp 0.5s ease-out;
+        transition: all 0.3s;
+    }
+    
+    .categoria:nth-child(2) { animation-delay: 0.1s; }
+    .categoria:nth-child(3) { animation-delay: 0.2s; }
+    .categoria:nth-child(4) { animation-delay: 0.3s; }
+    
+    .categoria:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 30px 45px -15px #000000;
+        border-color: rgba(37,99,235,0.3);
+    }
+    
+    .categoria-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.8rem;
+        border-bottom: 2px solid rgba(37,99,235,0.2);
+    }
+    
+    .categoria-nombre {
+        font-size: 1.3rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #1e293b, #0f172a);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    
+    .categoria-total {
+        font-weight: 600;
+        color: #2563eb;
+        background: rgba(37,99,235,0.1);
+        padding: 0.3rem 1rem;
+        border-radius: 2rem;
+        font-size: 1rem;
+    }
+    
+    /* Subcategorías */
+    .subcategoria {
+        padding: 1rem 0;
+        border-bottom: 1px solid rgba(203,213,225,0.2);
+        transition: all 0.3s;
+    }
+    
+    .subcategoria:last-child {
+        border-bottom: none;
+    }
+    
+    .subcategoria:hover {
+        background: rgba(255,255,255,0.05);
+        border-radius: 1rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .subcategoria-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .subcategoria-nombre {
+        font-weight: 600;
+        color: #1e293b;
+        font-size: 1rem;
+    }
+    
+    .subcategoria-detalle {
+        font-size: 0.8rem;
+        color: #64748b;
+        margin-bottom: 0.5rem;
+        font-style: italic;
+    }
+    
+    .subcategoria-montos {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 0.5rem 0;
+        padding: 0.5rem 0;
+    }
+    
+    .subcategoria-gastado {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+    
+    .subcategoria-presupuesto {
+        color: #64748b;
+        font-size: 0.95rem;
+    }
+    
+    /* Mini barras de progreso */
+    .mini-progress {
+        height: 8px;
+        background: rgba(226,232,240,0.2);
+        border-radius: 10px;
+        width: 100%;
+        margin: 0.8rem 0;
+        overflow: hidden;
+    }
+    
+    .mini-fill {
+        height: 8px;
+        border-radius: 10px;
+        width: 0%;
+        transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .mini-fill::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        animation: shimmer 2s infinite;
+    }
+    
+    .fill-green { 
+        background: linear-gradient(90deg, #10b981, #34d399);
+    }
+    .fill-yellow { 
+        background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    }
+    .fill-red { 
+        background: linear-gradient(90deg, #ef4444, #f87171);
+    }
+    
+    /* Badges de estado */
+    .status-badge {
+        padding: 0.3rem 1rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-block;
+        transition: all 0.3s;
+        box-shadow: 0 2px 8px -4px #000000;
+    }
+    
+    .status-good { 
+        background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+        color: #047857;
+    }
+    .status-warning { 
+        background: linear-gradient(135deg, #fed7aa, #fcd34d);
+        color: #b45309;
+    }
+    .status-danger { 
+        background: linear-gradient(135deg, #fee2e2, #fecaca);
+        color: #b91c1c;
+    }
+    
+    /* Formulario */
+    .form-card {
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 2rem;
+        padding: 2rem;
+        margin: 2rem 0;
+        box-shadow: 0 25px 40px -15px #000000;
+        border: 1px solid rgba(255,255,255,0.1);
+        animation: fadeInUp 0.5s ease-out 0.4s both;
+    }
+    
+    .form-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        color: #0f172a;
+        font-weight: 600;
+        font-size: 1.2rem;
+    }
+    
+    /* Botones mejorados */
+    .stButton > button {
+        background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+        border: none !important;
+        padding: 0.8rem 2rem !important;
+        border-radius: 3rem !important;
+        font-weight: 600 !important;
+        font-size: 1rem !important;
+        width: 100% !important;
+        transition: all 0.3s !important;
+        position: relative !important;
+        overflow: hidden !important;
+        box-shadow: 0 10px 20px -8px #1e3a8a !important;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-3px) scale(1.02) !important;
+        box-shadow: 0 20px 30px -10px #1e3a8a !important;
+    }
+    
+    .stButton > button::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.3);
+        transform: translate(-50%, -50%);
+        transition: width 0.6s, height 0.6s;
+    }
+    
+    .stButton > button:hover::after {
+        width: 300px;
+        height: 300px;
+    }
+    
+    .stButton > button[kind="secondary"] {
+        background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+        box-shadow: 0 10px 20px -8px #991b1b !important;
+    }
+    
+    /* Inputs */
+    .stSelectbox > div > div,
+    .stDateInput > div > div,
+    .stNumberInput > div > div,
+    .stTextInput > div > div {
+        border-radius: 1rem !important;
+        border: 1px solid rgba(203,213,225,0.2) !important;
+        background: rgba(255,255,255,0.9) !important;
+        transition: all 0.3s !important;
+    }
+    
+    .stSelectbox > div > div:hover,
+    .stDateInput > div > div:hover,
+    .stNumberInput > div > div:hover,
+    .stTextInput > div > div:hover {
+        border-color: #2563eb !important;
+        box-shadow: 0 0 0 3px rgba(37,99,235,0.1) !important;
+    }
+    
+    /* Footer */
+    .footer {
+        text-align: center;
+        color: #94a3b8;
+        font-size: 0.8rem;
+        margin-top: 3rem;
+        padding-top: 2rem;
+        border-top: 1px solid rgba(148,163,184,0.2);
+        animation: fadeInUp 0.5s ease-out 0.5s both;
+    }
+    
+    /* Tooltips */
+    [data-tooltip] {
+        position: relative;
+        cursor: help;
+    }
+    
+    [data-tooltip]:hover::before {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 0.5rem 1rem;
+        background: #1e293b;
+        color: white;
+        border-radius: 2rem;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        z-index: 1000;
+        box-shadow: 0 10px 20px -5px black;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# ============================================
 # INTERFAZ PRINCIPAL
 # ============================================
 
-# Header
+# Header con iconos
 st.markdown("""
 <div class="header">
     <div class="logo">💰</div>
@@ -455,7 +677,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Botón de exportar a CSV
+# Botón de exportar
 col_exp1, col_exp2, col_exp3 = st.columns([1, 1, 1])
 with col_exp2:
     csv_data = exportar_a_csv()
@@ -506,24 +728,23 @@ with col3:
 # Calcular totales
 total_gastado, restante, porcentaje = calcular_totales()
 
-# Filas de resumen
+# Filas de resumen con iconos
 st.markdown(f"""
 <div class="resumen-fila">
-    <span class="resumen-label">PRESUPUESTO</span>
+    <span class="resumen-label">💰 PRESUPUESTO</span>
     <span class="resumen-number">{format_money(PRESUPUESTO_TOTAL)}</span>
 </div>
 <div class="resumen-fila">
-    <span class="resumen-label">GASTADO</span>
+    <span class="resumen-label">💸 GASTADO</span>
     <span class="resumen-number">{format_money(total_gastado)}</span>
 </div>
 <div class="resumen-fila">
-    <span class="resumen-label">RESTANTE</span>
+    <span class="resumen-label">⚖️ RESTANTE</span>
     <span class="resumen-number {'warning' if restante < 0 else ''}">{format_money(restante)}</span>
 </div>
 """, unsafe_allow_html=True)
 
-# ===== BARRA DE PROGRESO CORREGIDA =====
-# Ahora muestra el presupuesto mensual en lugar del diario
+# Barra de progreso mejorada
 fill_class = ''
 if porcentaje > 100:
     fill_class = 'danger'
@@ -533,8 +754,8 @@ elif porcentaje > 80:
 st.markdown(f"""
 <div class="progress-container">
     <div class="progress-header">
-        <span>{porcentaje:.1f}% del presupuesto</span>
-        <span>Presupuesto: {format_money(PRESUPUESTO_TOTAL)}</span>
+        <span data-tooltip="Porcentaje del presupuesto mensual">{porcentaje:.1f}% del presupuesto</span>
+        <span data-tooltip="Presupuesto total del mes">💰 {format_money(PRESUPUESTO_TOTAL)}</span>
     </div>
     <div class="progress-bar">
         <div class="progress-fill {fill_class}" style="width:{min(porcentaje, 100)}%"></div>
@@ -560,12 +781,12 @@ for categoria, datos in PRESUPUESTOS.items():
                 st.markdown(f"**{format_money(gastado)}**")
                 st.markdown(f"de {format_money(presupuesto['monto'])}")
             
-            # Barra de progreso individual
+            # Barra de progreso individual mejorada
             progreso = min(gastado / presupuesto['monto'], 1.0) if presupuesto['monto'] > 0 else 0
-            color = '#dc2626' if (gastado / presupuesto['monto']) > 1.0 else '#f59e0b' if (gastado / presupuesto['monto']) > 0.8 else '#10b981'
+            fill_class = 'fill-red' if (gastado / presupuesto['monto']) > 1.0 else 'fill-yellow' if (gastado / presupuesto['monto']) > 0.8 else 'fill-green'
             st.markdown(f"""
-            <div style="height:8px; background:#e2e8f0; border-radius:10px; margin:10px 0; width:100%;">
-                <div style="height:8px; background:{color}; border-radius:10px; width:{progreso*100}%;"></div>
+            <div class="mini-progress">
+                <div class="mini-fill {fill_class}" style="width:{progreso*100}%"></div>
             </div>
             """, unsafe_allow_html=True)
             st.divider()
@@ -573,19 +794,27 @@ for categoria, datos in PRESUPUESTOS.items():
 # ============================================
 # FORMULARIO PARA AGREGAR GASTOS
 # ============================================
-st.markdown("### ➕ Agregar / Corregir gasto")
+st.markdown("""
+<div class="form-card">
+    <div class="form-title">
+        <span>➕ Agregar / Corregir gasto</span>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 col1, col2 = st.columns(2)
 with col1:
-    fecha = st.date_input("Fecha", datetime.now())
-    categoria_sel = st.selectbox("Categoría", list(PRESUPUESTOS.keys()), key="cat_select")
+    fecha = st.date_input("📅 Fecha", datetime.now())
+    categoria_sel = st.selectbox("📁 Categoría", list(PRESUPUESTOS.keys()), key="cat_select")
     
 with col2:
     subcategorias = list(PRESUPUESTOS[categoria_sel]['subcategorias'].keys())
-    subcategoria_sel = st.selectbox("Subcategoría", subcategorias, key="sub_select")
-    monto = st.number_input("Monto $ (positivo o negativo)", value=100, step=1, key="monto_input")
+    subcategoria_sel = st.selectbox("📂 Subcategoría", subcategorias, key="sub_select")
+    monto = st.number_input("💰 Monto $", value=100, step=1, key="monto_input", 
+                           help="Usa números negativos para corregir errores")
 
-descripcion = st.text_input("Descripción", key="desc_input")
+descripcion = st.text_input("📝 Descripción", key="desc_input", 
+                           placeholder="Ej: Supermercado, Uber, Luz...")
 
 col_b1, col_b2, col_b3 = st.columns(3)
 with col_b1:
@@ -600,7 +829,7 @@ with col_b1:
             }
             st.session_state.gastos.append(nuevo_gasto)
             guardar_gastos(st.session_state.gastos)
-            st.success("✅ Gasto guardado")
+            st.success("✅ Gasto guardado correctamente")
             st.rerun()
         else:
             st.error("❌ Completa todos los campos")
@@ -625,7 +854,7 @@ if gastos_mes:
     for _, row in df.iterrows():
         cols = st.columns([2, 2, 2, 4, 2])
         with cols[0]:
-            st.write(row['fecha'].strftime('%d/%m'))
+            st.write(f"**{row['fecha'].strftime('%d/%m')}**")
         with cols[1]:
             st.write(row['categoria'])
         with cols[2]:
@@ -641,7 +870,7 @@ if gastos_mes:
 st.markdown("""
 <div class="footer">
     <p>📧 contacto@optipension73.com · 📱 871 579 1810</p>
-    <p>✅ Datos guardados permanentemente · Cada mes independiente</p>
+    <p>⚡ Datos guardados permanentemente · Cada mes independiente</p>
     <p>© 2026 · OptiPensión 73</p>
 </div>
 """, unsafe_allow_html=True)
