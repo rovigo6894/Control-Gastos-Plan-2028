@@ -1,101 +1,180 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 from datetime import datetime
-import json
 import os
 
-st.set_page_config(page_title="💰 Control de Gastos", page_icon="💰", layout="centered")
+st.set_page_config(page_title="Control Gastos PRO", layout="wide")
 
-# Ocultar menús
-hide_streamlit_style = """
-            <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            header {visibility: hidden;}
-            </style>
-            """
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+st.title("💰 CONTROL DE GASTOS PRO")
+st.markdown("Sistema avanzado de control financiero personal")
+st.divider()
 
-st.title("💰 CONTROL DE GASTOS")
-st.caption("Ing. Roberto Villarreal")
-
-# ============================================
-# DATOS - ÚNICO LUGAR DONDE SE DEFINEN
-# ============================================
-CATEGORIAS = {
-    "Alimentación": ["Desayuno", "Comida", "Cena"],
-    "Servicios": ["Internet", "Luz", "Agua"],   # <--- ESTÁN CORRECTAS AQUÍ
-    "Vivienda": ["Mantenimiento", "Transporte"]
+PRESUPUESTO = {
+    "Alimentación - Casa": 2250,
+    "Alimentación - Salidas": 4450,
+    "Cena ligera": 1200,
+    "Internet": 600,
+    "Luz": 450,
+    "Agua": 200,
+    "Celular": 200,
+    "Gas": 100,
+    "Mantenimiento": 1400,
+    "Transporte": 750,
+    "Ahorro": 1500
 }
 
-PRESUPUESTO_TOTAL = 13100
-ARCHIVO_DATOS = "gastos.json"
+ARCHIVO = "gastos_pro.csv"
 
-def cargar_gastos():
-    if os.path.exists(ARCHIVO_DATOS):
-        with open(ARCHIVO_DATOS, 'r') as f:
-            return json.load(f)
-    return []
+# =============================
+# FUNCIONES
+# =============================
 
-def guardar_gastos(gastos):
-    with open(ARCHIVO_DATOS, 'w') as f:
-        json.dump(gastos, f, indent=2)
+def cargar():
+    if os.path.exists(ARCHIVO):
+        df = pd.read_csv(ARCHIVO)
+        df["fecha"] = pd.to_datetime(df["fecha"])
+        return df
+    return pd.DataFrame(columns=["fecha", "rubro", "monto", "tipo"])
 
-if 'gastos' not in st.session_state:
-    st.session_state.gastos = cargar_gastos()
 
-# ============================================
-# MÉTRICAS
-# ============================================
-total = sum(g['monto'] for g in st.session_state.gastos) if st.session_state.gastos else 0
-restante = PRESUPUESTO_TOTAL - total
-porcentaje = (total / PRESUPUESTO_TOTAL) * 100
+def guardar(df):
+    df.to_csv(ARCHIVO, index=False)
 
-col1, col2, col3 = st.columns(3)
-col1.metric("PRESUPUESTO", f"${PRESUPUESTO_TOTAL:,.0f}")
-col2.metric("GASTADO", f"${total:,.0f}", f"{porcentaje:.1f}%")
-col3.metric("RESTANTE", f"${restante:,.0f}")
 
-st.progress(min(porcentaje/100, 1.0))
+# =============================
+# INICIO
+# =============================
 
-# ============================================
-# FORMULARIO
-# ============================================
-st.subheader("➕ AGREGAR GASTO")
+df = cargar()
 
-with st.form("formulario"):
+# =============================
+# REGISTRO
+# =============================
+
+st.subheader("📥 Registrar movimiento")
+
+col1, col2, col3, col4, col5 = st.columns(5)
+
+with col1:
     fecha = st.date_input("Fecha", datetime.now())
-    categoria = st.selectbox("Categoría", list(CATEGORIAS.keys()))
-    
-    # ESTA LÍNEA USA EL DICCIONARIO - ES LA CLAVE
-    subcategoria = st.selectbox("Subcategoría", CATEGORIAS[categoria])
-    
-    monto = st.number_input("Monto $", value=100, step=10)
-    descripcion = st.text_input("Descripción")
-    
-    if st.form_submit_button("💾 GUARDAR"):
-        st.session_state.gastos.append({
-            'fecha': str(fecha),
-            'categoria': categoria,
-            'subcategoria': subcategoria,
-            'descripcion': descripcion,
-            'monto': monto
-        })
-        guardar_gastos(st.session_state.gastos)
+
+with col2:
+    rubro = st.selectbox("Rubro", list(PRESUPUESTO.keys()))
+
+with col3:
+    tipo = st.selectbox("Tipo", ["Gasto", "Corrección"])
+
+with col4:
+    monto = st.number_input("Monto", step=10.0)
+
+with col5:
+    st.write("")
+    st.write("")
+    if st.button("Agregar"):
+        if tipo == "Gasto" and monto < 0:
+            st.warning("Un gasto no puede ser negativo")
+        elif monto != 0:
+            nuevo = pd.DataFrame([{
+                "fecha": fecha,
+                "rubro": rubro,
+                "monto": monto,
+                "tipo": tipo
+            }])
+            df = pd.concat([df, nuevo], ignore_index=True)
+            guardar(df)
+            st.success("Guardado")
+            st.rerun()
+
+st.divider()
+
+# =============================
+# FILTROS
+# =============================
+
+st.subheader("🔍 Filtros")
+
+colf1, colf2 = st.columns(2)
+
+with colf1:
+    inicio = st.date_input("Desde", datetime.now().replace(day=1))
+
+with colf2:
+    fin = st.date_input("Hasta", datetime.now())
+
+if not df.empty:
+    df_filtrado = df[(df["fecha"] >= pd.to_datetime(inicio)) & (df["fecha"] <= pd.to_datetime(fin))]
+else:
+    df_filtrado = df
+
+# =============================
+# TABLA
+# =============================
+
+if not df_filtrado.empty:
+    df_filtrado = df_filtrado.sort_values(by="fecha", ascending=False)
+    st.dataframe(df_filtrado, use_container_width=True)
+
+# =============================
+# ANALISIS
+# =============================
+
+st.subheader("📊 Análisis")
+
+if not df_filtrado.empty:
+    resumen = df_filtrado.groupby("rubro")["monto"].sum().reset_index()
+    resumen["presupuesto"] = resumen["rubro"].map(PRESUPUESTO)
+    resumen["disponible"] = resumen["presupuesto"] - resumen["monto"]
+
+    total = df_filtrado["monto"].sum()
+    dias = datetime.now().day
+    proyeccion = (total / dias) * 30
+
+    colm1, colm2 = st.columns(2)
+
+    with colm1:
+        st.metric("Total gastado", f"${total:,.2f}")
+
+    with colm2:
+        st.metric("Proyección mensual", f"${proyeccion:,.2f}")
+
+    # GRAFICAS
+    fig1 = px.pie(resumen, names="rubro", values="monto", title="Distribución")
+    st.plotly_chart(fig1, use_container_width=True)
+
+    gastos_dia = df_filtrado.groupby("fecha")["monto"].sum().reset_index()
+    fig2 = px.line(gastos_dia, x="fecha", y="monto", title="Tendencia diaria")
+    st.plotly_chart(fig2, use_container_width=True)
+
+    # ALERTAS
+    for _, row in resumen.iterrows():
+        if row["disponible"] < 0:
+            st.error(f"Exceso en {row['rubro']}")
+
+# =============================
+# BOTONES
+# =============================
+
+st.divider()
+
+colb1, colb2 = st.columns(2)
+
+with colb1:
+    if st.button("Reiniciar datos"):
+        df = pd.DataFrame(columns=df.columns)
+        guardar(df)
         st.rerun()
 
-# ============================================
-# MOSTRAR GASTOS
-# ============================================
-if st.session_state.gastos:
-    st.subheader("📋 GASTOS RECIENTES")
-    df = pd.DataFrame(st.session_state.gastos[-10:][::-1])
-    st.dataframe(df, use_container_width=True)
+with colb2:
+    if st.button("Exportar Excel"):
+        df.to_excel("gastos_pro.xlsx", index=False)
+        st.success("Exportado")
 
-# ============================================
-# REINICIAR
-# ============================================
-if st.button("🗑️ REINICIAR TODO"):
-    st.session_state.gastos = []
-    guardar_gastos([])
-    st.rerun()
+st.divider()
+
+st.markdown("""
+### 🎯 Mentalidad PRO
+- Control diario
+- Decisiones conscientes
+- Visión a largo plazo
+""")
