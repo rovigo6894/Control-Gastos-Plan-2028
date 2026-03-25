@@ -2,179 +2,142 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from datetime import datetime
-import os
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
-st.set_page_config(page_title="Control Gastos PRO", layout="wide")
+st.set_page_config(page_title="Control Financiero V8 PRO", layout="centered")
 
-st.title("💰 CONTROL DE GASTOS PRO")
-st.markdown("Sistema avanzado de control financiero personal")
-st.divider()
-
+# =============================
+# CONFIG
+# =============================
+PRESUPUESTO_TOTAL = 13100
 PRESUPUESTO = {
-    "Alimentación - Casa": 2250,
-    "Alimentación - Salidas": 4450,
-    "Cena ligera": 1200,
-    "Internet": 600,
-    "Luz": 450,
-    "Agua": 200,
-    "Celular": 200,
-    "Gas": 100,
-    "Mantenimiento": 1400,
+    "Alimentación": 7900,
+    "Servicios": 1550,
+    "Vivienda": 1400,
     "Transporte": 750,
     "Ahorro": 1500
 }
 
-ARCHIVO = "gastos_pro.csv"
+PASSWORD = "1234"
 
 # =============================
-# FUNCIONES
+# LOGIN
+# =============================
+if "auth" not in st.session_state:
+    st.session_state.auth = False
+
+if not st.session_state.auth:
+    st.title("🔐 Acceso")
+    pwd = st.text_input("Contraseña", type="password")
+    if st.button("Entrar"):
+        if pwd == PASSWORD:
+            st.session_state.auth = True
+            st.rerun()
+        else:
+            st.error("Contraseña incorrecta")
+    st.stop()
+
+# =============================
+# GOOGLE SHEETS
+# =============================
+scope = [
+    "https://spreadsheets.google.com/feeds",
+    "https://www.googleapis.com/auth/drive"
+]
+
+credentials = ServiceAccountCredentials.from_json_keyfile_dict(
+    st.secrets["gcp_service_account"], scope
+)
+
+client = gspread.authorize(credentials)
+sheet = client.open("Control_Gastos").sheet1
+
+# =============================
+# CARGAR DATOS
 # =============================
 
 def cargar():
-    if os.path.exists(ARCHIVO):
-        df = pd.read_csv(ARCHIVO)
+    data = sheet.get_all_records()
+    df = pd.DataFrame(data)
+    if not df.empty:
         df["fecha"] = pd.to_datetime(df["fecha"])
-        return df
-    return pd.DataFrame(columns=["fecha", "rubro", "monto", "tipo"])
+    return df
 
 
-def guardar(df):
-    df.to_csv(ARCHIVO, index=False)
-
+def guardar(fila):
+    sheet.append_row(fila)
 
 # =============================
-# INICIO
+# DATA
 # =============================
-
 df = cargar()
 
+st.title("💰 Control Financiero V8 PRO")
+st.caption("Sistema móvil con nube + inteligencia financiera")
+
 # =============================
-# REGISTRO
+# KPIs (MÓVIL)
 # =============================
+if not df.empty:
+    total = df["monto"].sum()
+    dias = datetime.now().day
+    proyeccion = (total / dias) * 30
+    restante = PRESUPUESTO_TOTAL - total
 
-st.subheader("📥 Registrar movimiento")
-
-col1, col2, col3, col4, col5 = st.columns(5)
-
-with col1:
-    fecha = st.date_input("Fecha", datetime.now())
-
-with col2:
-    rubro = st.selectbox("Rubro", list(PRESUPUESTO.keys()))
-
-with col3:
-    tipo = st.selectbox("Tipo", ["Gasto", "Corrección"])
-
-with col4:
-    monto = st.number_input("Monto", step=10.0)
-
-with col5:
-    st.write("")
-    st.write("")
-    if st.button("Agregar"):
-        if tipo == "Gasto" and monto < 0:
-            st.warning("Un gasto no puede ser negativo")
-        elif monto != 0:
-            nuevo = pd.DataFrame([{
-                "fecha": fecha,
-                "rubro": rubro,
-                "monto": monto,
-                "tipo": tipo
-            }])
-            df = pd.concat([df, nuevo], ignore_index=True)
-            guardar(df)
-            st.success("Guardado")
-            st.rerun()
+    st.metric("💸 Gastado", f"${total:,.0f}")
+    st.metric("📈 Proyección", f"${proyeccion:,.0f}")
+    st.metric("💰 Disponible", f"${restante:,.0f}")
 
 st.divider()
 
 # =============================
-# FILTROS
+# INPUT MÓVIL
 # =============================
+st.subheader("➕ Registrar gasto")
 
-st.subheader("🔍 Filtros")
+fecha = st.date_input("Fecha", datetime.now())
+rubro = st.selectbox("Categoría", list(PRESUPUESTO.keys()))
+monto = st.number_input("Monto", step=10.0)
 
-colf1, colf2 = st.columns(2)
+if st.button("Guardar"):
+    if monto > 0:
+        guardar([
+            fecha.strftime("%Y-%m-%d"),
+            rubro,
+            monto
+        ])
+        st.success("Guardado en la nube")
+        st.rerun()
 
-with colf1:
-    inicio = st.date_input("Desde", datetime.now().replace(day=1))
-
-with colf2:
-    fin = st.date_input("Hasta", datetime.now())
-
-if not df.empty:
-    df_filtrado = df[(df["fecha"] >= pd.to_datetime(inicio)) & (df["fecha"] <= pd.to_datetime(fin))]
-else:
-    df_filtrado = df
-
-# =============================
-# TABLA
-# =============================
-
-if not df_filtrado.empty:
-    df_filtrado = df_filtrado.sort_values(by="fecha", ascending=False)
-    st.dataframe(df_filtrado, use_container_width=True)
+st.divider()
 
 # =============================
 # ANALISIS
 # =============================
-
-st.subheader("📊 Análisis")
-
-if not df_filtrado.empty:
-    resumen = df_filtrado.groupby("rubro")["monto"].sum().reset_index()
+if not df.empty:
+    resumen = df.groupby("rubro")["monto"].sum().reset_index()
     resumen["presupuesto"] = resumen["rubro"].map(PRESUPUESTO)
-    resumen["disponible"] = resumen["presupuesto"] - resumen["monto"]
+    resumen["uso %"] = (resumen["monto"] / resumen["presupuesto"] * 100)
 
-    total = df_filtrado["monto"].sum()
-    dias = datetime.now().day
-    proyeccion = (total / dias) * 30
+    st.subheader("🧠 Diagnóstico")
 
-    colm1, colm2 = st.columns(2)
+    top = resumen.sort_values(by="uso %", ascending=False).iloc[0]
 
-    with colm1:
-        st.metric("Total gastado", f"${total:,.2f}")
+    if top["uso %"] > 100:
+        st.error(f"Exceso en {top['rubro']}")
+    elif top["uso %"] > 80:
+        st.warning(f"Cuidado con {top['rubro']}")
+    else:
+        st.success("Buen control")
 
-    with colm2:
-        st.metric("Proyección mensual", f"${proyeccion:,.2f}")
+    # GRÁFICA SIMPLE MÓVIL
+    fig = px.pie(resumen, names="rubro", values="monto")
+    st.plotly_chart(fig, use_container_width=True)
 
-    # GRAFICAS
-    fig1 = px.pie(resumen, names="rubro", values="monto", title="Distribución")
-    st.plotly_chart(fig1, use_container_width=True)
-
-    gastos_dia = df_filtrado.groupby("fecha")["monto"].sum().reset_index()
-    fig2 = px.line(gastos_dia, x="fecha", y="monto", title="Tendencia diaria")
-    st.plotly_chart(fig2, use_container_width=True)
-
-    # ALERTAS
-    for _, row in resumen.iterrows():
-        if row["disponible"] < 0:
-            st.error(f"Exceso en {row['rubro']}")
-
-# =============================
-# BOTONES
-# =============================
+    # HISTORIAL SIMPLE
+    st.subheader("📋 Movimientos")
+    st.dataframe(df.sort_values(by="fecha", ascending=False), use_container_width=True)
 
 st.divider()
-
-colb1, colb2 = st.columns(2)
-
-with colb1:
-    if st.button("Reiniciar datos"):
-        df = pd.DataFrame(columns=df.columns)
-        guardar(df)
-        st.rerun()
-
-with colb2:
-    if st.button("Exportar Excel"):
-        df.to_excel("gastos_pro.xlsx", index=False)
-        st.success("Exportado")
-
-st.divider()
-
-st.markdown("""
-### 🎯 Mentalidad PRO
-- Control diario
-- Decisiones conscientes
-- Visión a largo plazo
-""")
+st.caption("V8 PRO: Sistema en la nube + optimizado para celular")
