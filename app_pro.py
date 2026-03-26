@@ -76,7 +76,7 @@ ARCHIVO_METAS = "metas.json"
 ARCHIVO_RECORDATORIOS = "recordatorios.json"
 
 # ============================================
-# FUNCIONES DE CARGA Y GUARDADO CON MANEJO DE ERRORES
+# FUNCIONES DE CARGA Y GUARDADO
 # ============================================
 def cargar_categorias():
     if os.path.exists(ARCHIVO_CATEGORIAS):
@@ -96,9 +96,7 @@ def cargar_gastos():
         try:
             df = pd.read_csv(ARCHIVO_GASTOS)
             if not df.empty:
-                # Manejo seguro de fechas
                 df["fecha"] = pd.to_datetime(df["fecha"], errors='coerce')
-                # Eliminar filas con fechas inválidas
                 df = df.dropna(subset=["fecha"])
                 if "recibo" not in df.columns:
                     df["recibo"] = ""
@@ -107,8 +105,7 @@ def cargar_gastos():
                 if "id" not in df.columns:
                     df["id"] = range(1, len(df) + 1)
             return df
-        except Exception as e:
-            # Si hay error, crear archivo nuevo
+        except:
             return pd.DataFrame(columns=["id", "fecha", "rubro", "subcategoria", "monto", "descripcion", "recibo"])
     return pd.DataFrame(columns=["id", "fecha", "rubro", "subcategoria", "monto", "descripcion", "recibo"])
 
@@ -243,7 +240,6 @@ df = cargar_gastos()
 metas = cargar_metas()
 recordatorios = cargar_recordatorios()
 
-# Calcular total presupuesto
 total_presupuesto = sum(c["presupuesto"] for c in categorias.values())
 
 # ============================================
@@ -401,12 +397,12 @@ elif st.session_state.pagina == "Registrar":
             st.warning("⚠️ Ingresa un monto válido")
 
 # ============================================
-# CONFIGURACIÓN
+# CONFIGURACIÓN (CON CREAR/ELIMINAR CATEGORÍAS)
 # ============================================
 elif st.session_state.pagina == "Configuración":
     st.title("✏️ Configuración")
     
-    tab1, tab2 = st.tabs(["📂 Presupuestos", "🏷️ Subcategorías"])
+    tab1, tab2, tab3 = st.tabs(["📂 Presupuestos", "🏷️ Subcategorías", "➕ Gestionar categorías"])
     
     with tab1:
         st.subheader("Editar presupuestos mensuales")
@@ -445,6 +441,57 @@ elif st.session_state.pagina == "Configuración":
                 categorias[rubro_editar]["subcategorias"].remove(eliminar_sub)
                 guardar_categorias(categorias)
                 st.success(f"✅ Subcategoría '{eliminar_sub}' eliminada")
+                st.rerun()
+    
+    with tab3:
+        st.subheader("➕ Agregar nueva categoría")
+        col1, col2 = st.columns(2)
+        with col1:
+            nueva_categoria = st.text_input("Nombre de la nueva categoría")
+        with col2:
+            presupuesto_categoria = st.number_input("Presupuesto mensual", step=100.0, min_value=0.0, format="%.0f")
+        
+        # Subcategorías iniciales para la nueva categoría
+        st.write("**Subcategorías iniciales (una por línea):**")
+        subcategorias_iniciales = st.text_area("Ejemplo:\nCompra\nMantenimiento\nServicio", height=100)
+        
+        if st.button("➕ Crear categoría", type="primary", use_container_width=True):
+            if nueva_categoria and nueva_categoria not in categorias:
+                subs = [s.strip() for s in subcategorias_iniciales.split("\n") if s.strip()]
+                if not subs:
+                    subs = ["General"]
+                categorias[nueva_categoria] = {
+                    "presupuesto": presupuesto_categoria,
+                    "subcategorias": subs
+                }
+                guardar_categorias(categorias)
+                st.success(f"✅ Categoría '{nueva_categoria}' creada con {len(subs)} subcategorías")
+                st.rerun()
+            elif nueva_categoria in categorias:
+                st.error("❌ Esta categoría ya existe")
+            else:
+                st.warning("⚠️ Ingresa un nombre para la categoría")
+        
+        st.divider()
+        st.subheader("🗑️ Eliminar categoría")
+        categorias_lista = list(categorias.keys())
+        categoria_eliminar = st.selectbox("Selecciona categoría a eliminar", categorias_lista)
+        
+        # Verificar si tiene gastos asociados
+        tiene_gastos = not df.empty and categoria_eliminar in df["rubro"].values
+        if tiene_gastos:
+            st.warning(f"⚠️ La categoría '{categoria_eliminar}' tiene gastos registrados. Si la eliminas, esos gastos se perderán.")
+        
+        if st.button("🗑️ Eliminar categoría", use_container_width=True):
+            if categoria_eliminar:
+                if tiene_gastos:
+                    # Eliminar también los gastos asociados
+                    df = cargar_gastos()
+                    df = df[df["rubro"] != categoria_eliminar]
+                    guardar_gastos(df)
+                del categorias[categoria_eliminar]
+                guardar_categorias(categorias)
+                st.success(f"✅ Categoría '{categoria_eliminar}' eliminada")
                 st.rerun()
 
 # ============================================
@@ -649,4 +696,4 @@ elif st.session_state.pagina == "Historial":
         st.info("No hay gastos registrados")
 
 st.divider()
-st.caption("💰 Control Financiero PRO | 12 categorías | Metas | Recordatorios | Análisis avanzado")
+st.caption("💰 Control Financiero PRO | 12+ categorías | Crear/eliminar categorías | Metas | Recordatorios")
