@@ -150,57 +150,67 @@ def obtener_nuevo_id(df):
     return df["id"].max() + 1
 
 # ============================================
-# FUNCIONES DE ANÁLISIS
+# FUNCIONES DE ANÁLISIS CON PROTECCIÓN
 # ============================================
 def calcular_tendencias(df, meses=3):
-    if df.empty or len(df) < 10:
+    if df is None or df.empty or len(df) < 10:
         return None
-    df_mes = df.copy()
-    df_mes["mes"] = df_mes["fecha"].dt.to_period("M")
-    gastos_mensuales = df_mes.groupby("mes")["monto"].sum().reset_index()
-    if len(gastos_mensuales) >= 2:
-        ultimos = gastos_mensuales.tail(meses)
-        if len(ultimos) >= 2 and ultimos["monto"].iloc[-2] > 0:
-            tendencia = (ultimos["monto"].iloc[-1] - ultimos["monto"].iloc[-2]) / ultimos["monto"].iloc[-2] * 100
-            return tendencia
+    try:
+        df_mes = df.copy()
+        df_mes["mes"] = pd.to_datetime(df_mes["fecha"]).dt.to_period("M")
+        gastos_mensuales = df_mes.groupby("mes")["monto"].sum().reset_index()
+        if len(gastos_mensuales) >= 2:
+            ultimos = gastos_mensuales.tail(meses)
+            if len(ultimos) >= 2 and ultimos["monto"].iloc[-2] > 0:
+                tendencia = (ultimos["monto"].iloc[-1] - ultimos["monto"].iloc[-2]) / ultimos["monto"].iloc[-2] * 100
+                return tendencia
+    except:
+        return None
     return None
 
 def predecir_gasto_mensual(df):
-    if df.empty or len(df) < 5:
+    if df is None or df.empty or len(df) < 5:
         return None
-    df_dias = df.groupby(df["fecha"].dt.day)["monto"].sum().reset_index()
-    if len(df_dias) > 0:
-        promedio_diario = df_dias["monto"].mean()
-        dias_restantes = 30 - datetime.now().day
-        return promedio_diario * dias_restantes
+    try:
+        df_dias = df.groupby(pd.to_datetime(df["fecha"]).dt.day)["monto"].sum().reset_index()
+        if len(df_dias) > 0:
+            promedio_diario = df_dias["monto"].mean()
+            dias_restantes = 30 - datetime.now().day
+            return promedio_diario * dias_restantes
+    except:
+        return None
     return None
 
 def comparar_meses(df):
-    if df.empty:
+    if df is None or df.empty:
         return None
-    df["mes"] = df["fecha"].dt.to_period("M")
-    actual = datetime.now().strftime("%Y-%m")
-    anterior = (datetime.now() - timedelta(days=30)).strftime("%Y-%m")
-    
-    gasto_actual = df[df["mes"].astype(str) == actual]["monto"].sum()
-    gasto_anterior = df[df["mes"].astype(str) == anterior]["monto"].sum()
-    
-    if gasto_anterior > 0:
-        variacion = ((gasto_actual - gasto_anterior) / gasto_anterior) * 100
-    else:
-        variacion = 0
-    
-    return {
-        "actual": gasto_actual,
-        "anterior": gasto_anterior,
-        "variacion": variacion
-    }
+    try:
+        df_temp = df.copy()
+        df_temp["mes"] = pd.to_datetime(df_temp["fecha"]).dt.to_period("M")
+        actual = datetime.now().strftime("%Y-%m")
+        anterior = (datetime.now() - timedelta(days=30)).strftime("%Y-%m")
+        
+        gasto_actual = df_temp[df_temp["mes"].astype(str) == actual]["monto"].sum()
+        gasto_anterior = df_temp[df_temp["mes"].astype(str) == anterior]["monto"].sum()
+        
+        if gasto_anterior > 0:
+            variacion = ((gasto_actual - gasto_anterior) / gasto_anterior) * 100
+        else:
+            variacion = 0
+        
+        return {
+            "actual": gasto_actual,
+            "anterior": gasto_anterior,
+            "variacion": variacion
+        }
+    except:
+        return None
 
 def exportar_excel(df):
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df_export = df.copy()
-        df_export["fecha"] = df_export["fecha"].dt.strftime("%d/%m/%Y")
+        df_export["fecha"] = pd.to_datetime(df_export["fecha"]).dt.strftime("%d/%m/%Y")
         df_export.to_excel(writer, sheet_name='Gastos', index=False)
         if not df_export.empty:
             resumen = df_export.groupby("rubro")["monto"].sum().reset_index()
@@ -269,12 +279,15 @@ with st.sidebar:
     st.divider()
     
     if not df.empty:
-        gasto_mes = df[df["fecha"].dt.month == datetime.now().month]["monto"].sum()
-        st.metric("📅 Gasto del mes", f"${gasto_mes:,.0f}")
-        st.metric("🎯 Presupuesto total", f"${total_presupuesto:,.0f}")
-        porcentaje = (gasto_mes / total_presupuesto * 100) if total_presupuesto > 0 else 0
-        st.progress(min(porcentaje / 100, 1.0))
-        st.caption(f"{porcentaje:.0f}% usado")
+        try:
+            gasto_mes = df[pd.to_datetime(df["fecha"]).dt.month == datetime.now().month]["monto"].sum()
+            st.metric("📅 Gasto del mes", f"${gasto_mes:,.0f}")
+            st.metric("🎯 Presupuesto total", f"${total_presupuesto:,.0f}")
+            porcentaje = (gasto_mes / total_presupuesto * 100) if total_presupuesto > 0 else 0
+            st.progress(min(porcentaje / 100, 1.0))
+            st.caption(f"{porcentaje:.0f}% usado")
+        except:
+            pass
 
 # ============================================
 # ESTILOS
@@ -293,66 +306,70 @@ if st.session_state.pagina == "Dashboard":
     st.title("📊 Dashboard Financiero")
     
     if not df.empty:
-        gasto_mes = df[df["fecha"].dt.month == datetime.now().month]["monto"].sum()
-        gasto_dia = df[df["fecha"].dt.date == datetime.now().date()]["monto"].sum()
-        
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("💸 Gasto del mes", f"${gasto_mes:,.0f}")
-        with col2:
-            st.metric("📅 Gasto hoy", f"${gasto_dia:,.0f}")
-        with col3:
-            tendencia = calcular_tendencias(df)
-            if tendencia is not None:
-                st.metric("📈 Tendencia", f"{tendencia:.1f}%")
-            else:
-                st.metric("📈 Tendencia", "N/D")
-        with col4:
-            prediccion = predecir_gasto_mensual(df)
-            if prediccion is not None:
-                st.metric("🔮 Predicción", f"${prediccion:,.0f}")
-        
-        comparacion = comparar_meses(df)
-        if comparacion:
-            st.subheader("📊 Comparativa mes vs mes")
+        try:
+            gasto_mes = df[pd.to_datetime(df["fecha"]).dt.month == datetime.now().month]["monto"].sum()
+            gasto_dia = df[pd.to_datetime(df["fecha"]).dt.date == datetime.now().date()]["monto"].sum()
+            
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("💸 Gasto del mes", f"${gasto_mes:,.0f}")
+            with col2:
+                st.metric("📅 Gasto hoy", f"${gasto_dia:,.0f}")
+            with col3:
+                tendencia = calcular_tendencias(df)
+                if tendencia is not None:
+                    st.metric("📈 Tendencia", f"{tendencia:.1f}%")
+                else:
+                    st.metric("📈 Tendencia", "N/D")
+            with col4:
+                prediccion = predecir_gasto_mensual(df)
+                if prediccion is not None:
+                    st.metric("🔮 Predicción", f"${prediccion:,.0f}")
+            
+            comparacion = comparar_meses(df)
+            if comparacion:
+                st.subheader("📊 Comparativa mes vs mes")
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("Mes actual", f"${comparacion['actual']:,.0f}")
+                with col2:
+                    st.metric("Mes anterior", f"${comparacion['anterior']:,.0f}", delta=f"{comparacion['variacion']:.1f}%")
+            
+            st.divider()
+            
             col1, col2 = st.columns(2)
             with col1:
-                st.metric("Mes actual", f"${comparacion['actual']:,.0f}")
+                st.subheader("🥧 Distribución")
+                resumen = df[pd.to_datetime(df["fecha"]).dt.month == datetime.now().month].groupby("rubro")["monto"].sum().reset_index()
+                if not resumen.empty:
+                    fig = px.pie(resumen, names="rubro", values="monto", hole=0.3)
+                    st.plotly_chart(fig, use_container_width=True)
+            
             with col2:
-                st.metric("Mes anterior", f"${comparacion['anterior']:,.0f}", delta=f"{comparacion['variacion']:.1f}%")
-        
-        st.divider()
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            st.subheader("🥧 Distribución")
-            resumen = df[df["fecha"].dt.month == datetime.now().month].groupby("rubro")["monto"].sum().reset_index()
-            if not resumen.empty:
-                fig = px.pie(resumen, names="rubro", values="monto", hole=0.3)
+                st.subheader("📈 Evolución")
+                df_temp = df.copy()
+                df_temp["mes"] = pd.to_datetime(df_temp["fecha"]).dt.to_period("M").astype(str)
+                evolucion = df_temp.groupby("mes")["monto"].sum().reset_index()
+                fig = px.line(evolucion, x="mes", y="monto", markers=True)
                 st.plotly_chart(fig, use_container_width=True)
-        
-        with col2:
-            st.subheader("📈 Evolución")
-            df["mes"] = df["fecha"].dt.to_period("M").astype(str)
-            evolucion = df.groupby("mes")["monto"].sum().reset_index()
-            fig = px.line(evolucion, x="mes", y="monto", markers=True)
-            st.plotly_chart(fig, use_container_width=True)
-        
-        st.subheader("🚨 Alertas")
-        resumen_cat = df[df["fecha"].dt.month == datetime.now().month].groupby("rubro")["monto"].sum().reset_index()
-        alertas = False
-        for _, row in resumen_cat.iterrows():
-            presupuesto = categorias.get(row["rubro"], {}).get("presupuesto", 0)
-            if presupuesto > 0:
-                porcentaje = (row["monto"] / presupuesto * 100)
-                if porcentaje > 100:
-                    st.error(f"⚠️ EXCESO en {row['rubro']}: ${row['monto']:,.0f} / ${presupuesto:,.0f} ({porcentaje:.0f}%)")
-                    alertas = True
-                elif porcentaje > 80:
-                    st.warning(f"📌 ALERTA en {row['rubro']}: ${row['monto']:,.0f} / ${presupuesto:,.0f} ({porcentaje:.0f}%)")
-                    alertas = True
-        if not alertas:
-            st.success("✅ Todo en orden")
+            
+            st.subheader("🚨 Alertas")
+            resumen_cat = df[pd.to_datetime(df["fecha"]).dt.month == datetime.now().month].groupby("rubro")["monto"].sum().reset_index()
+            alertas = False
+            for _, row in resumen_cat.iterrows():
+                presupuesto = categorias.get(row["rubro"], {}).get("presupuesto", 0)
+                if presupuesto > 0:
+                    porcentaje = (row["monto"] / presupuesto * 100)
+                    if porcentaje > 100:
+                        st.error(f"⚠️ EXCESO en {row['rubro']}: ${row['monto']:,.0f} / ${presupuesto:,.0f} ({porcentaje:.0f}%)")
+                        alertas = True
+                    elif porcentaje > 80:
+                        st.warning(f"📌 ALERTA en {row['rubro']}: ${row['monto']:,.0f} / ${presupuesto:,.0f} ({porcentaje:.0f}%)")
+                        alertas = True
+            if not alertas:
+                st.success("✅ Todo en orden")
+        except Exception as e:
+            st.error(f"Error al cargar dashboard: {e}")
     else:
         st.info("📝 No hay gastos registrados")
 
@@ -397,7 +414,7 @@ elif st.session_state.pagina == "Registrar":
             st.warning("⚠️ Ingresa un monto válido")
 
 # ============================================
-# CONFIGURACIÓN (CON CREAR/ELIMINAR CATEGORÍAS)
+# CONFIGURACIÓN
 # ============================================
 elif st.session_state.pagina == "Configuración":
     st.title("✏️ Configuración")
@@ -451,7 +468,6 @@ elif st.session_state.pagina == "Configuración":
         with col2:
             presupuesto_categoria = st.number_input("Presupuesto mensual", step=100.0, min_value=0.0, format="%.0f")
         
-        # Subcategorías iniciales para la nueva categoría
         st.write("**Subcategorías iniciales (una por línea):**")
         subcategorias_iniciales = st.text_area("Ejemplo:\nCompra\nMantenimiento\nServicio", height=100)
         
@@ -477,7 +493,6 @@ elif st.session_state.pagina == "Configuración":
         categorias_lista = list(categorias.keys())
         categoria_eliminar = st.selectbox("Selecciona categoría a eliminar", categorias_lista)
         
-        # Verificar si tiene gastos asociados
         tiene_gastos = not df.empty and categoria_eliminar in df["rubro"].values
         if tiene_gastos:
             st.warning(f"⚠️ La categoría '{categoria_eliminar}' tiene gastos registrados. Si la eliminas, esos gastos se perderán.")
@@ -485,7 +500,6 @@ elif st.session_state.pagina == "Configuración":
         if st.button("🗑️ Eliminar categoría", use_container_width=True):
             if categoria_eliminar:
                 if tiene_gastos:
-                    # Eliminar también los gastos asociados
                     df = cargar_gastos()
                     df = df[df["rubro"] != categoria_eliminar]
                     guardar_gastos(df)
@@ -589,34 +603,38 @@ elif st.session_state.pagina == "Análisis":
     st.title("📈 Análisis avanzado")
     
     if not df.empty:
-        col1, col2 = st.columns(2)
-        with col1:
-            fecha_inicio = st.date_input("Desde", df["fecha"].min())
-        with col2:
-            fecha_fin = st.date_input("Hasta", df["fecha"].max())
-        
-        df_filtrado = df[(df["fecha"] >= pd.to_datetime(fecha_inicio)) & (df["fecha"] <= pd.to_datetime(fecha_fin))]
-        
-        if not df_filtrado.empty:
-            st.subheader("🏆 Top categorías")
-            top_cat = df_filtrado.groupby("rubro")["monto"].sum().sort_values(ascending=False).head(5)
-            fig = px.bar(top_cat, x=top_cat.values, y=top_cat.index, orientation='h')
-            st.plotly_chart(fig, use_container_width=True)
+        try:
+            col1, col2 = st.columns(2)
+            with col1:
+                fecha_inicio = st.date_input("Desde", pd.to_datetime(df["fecha"]).min())
+            with col2:
+                fecha_fin = st.date_input("Hasta", pd.to_datetime(df["fecha"]).max())
             
-            st.subheader("📊 Evolución")
-            df_filtrado["mes"] = df_filtrado["fecha"].dt.to_period("M").astype(str)
-            evolucion = df_filtrado.groupby("mes")["monto"].sum().reset_index()
-            fig = px.area(evolucion, x="mes", y="monto")
-            st.plotly_chart(fig, use_container_width=True)
+            df_filtrado = df[(pd.to_datetime(df["fecha"]) >= pd.to_datetime(fecha_inicio)) & (pd.to_datetime(df["fecha"]) <= pd.to_datetime(fecha_fin))]
             
-            st.subheader("📅 Gastos por día")
-            df_filtrado["dia"] = df_filtrado["fecha"].dt.day_name()
-            gastos_dia = df_filtrado.groupby("dia")["monto"].sum().reset_index()
-            orden = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-            gastos_dia["dia"] = pd.Categorical(gastos_dia["dia"], categories=orden, ordered=True)
-            gastos_dia = gastos_dia.sort_values("dia")
-            fig = px.bar(gastos_dia, x="dia", y="monto")
-            st.plotly_chart(fig, use_container_width=True)
+            if not df_filtrado.empty:
+                st.subheader("🏆 Top categorías")
+                top_cat = df_filtrado.groupby("rubro")["monto"].sum().sort_values(ascending=False).head(5)
+                fig = px.bar(top_cat, x=top_cat.values, y=top_cat.index, orientation='h')
+                st.plotly_chart(fig, use_container_width=True)
+                
+                st.subheader("📊 Evolución")
+                df_filtrado_temp = df_filtrado.copy()
+                df_filtrado_temp["mes"] = pd.to_datetime(df_filtrado_temp["fecha"]).dt.to_period("M").astype(str)
+                evolucion = df_filtrado_temp.groupby("mes")["monto"].sum().reset_index()
+                fig = px.area(evolucion, x="mes", y="monto")
+                st.plotly_chart(fig, use_container_width=True)
+                
+                st.subheader("📅 Gastos por día")
+                df_filtrado_temp["dia"] = pd.to_datetime(df_filtrado_temp["fecha"]).dt.day_name()
+                gastos_dia = df_filtrado_temp.groupby("dia")["monto"].sum().reset_index()
+                orden = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+                gastos_dia["dia"] = pd.Categorical(gastos_dia["dia"], categories=orden, ordered=True)
+                gastos_dia = gastos_dia.sort_values("dia")
+                fig = px.bar(gastos_dia, x="dia", y="monto")
+                st.plotly_chart(fig, use_container_width=True)
+        except Exception as e:
+            st.error(f"Error en análisis: {e}")
     else:
         st.info("No hay datos suficientes")
 
@@ -627,71 +645,74 @@ elif st.session_state.pagina == "Historial":
     st.title("📋 Historial completo")
     
     if not df.empty:
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            fecha_inicio = st.date_input("Desde", df["fecha"].min())
-        with col2:
-            fecha_fin = st.date_input("Hasta", df["fecha"].max())
-        with col3:
-            rubro_filtro = st.selectbox("Categoría", ["Todas"] + list(categorias.keys()))
-        
-        df_filtrado = df[(df["fecha"] >= pd.to_datetime(fecha_inicio)) & (df["fecha"] <= pd.to_datetime(fecha_fin))]
-        if rubro_filtro != "Todas":
-            df_filtrado = df_filtrado[df_filtrado["rubro"] == rubro_filtro]
-        
-        for idx, row in df_filtrado.sort_values("fecha", ascending=False).iterrows():
-            with st.expander(f"📅 {row['fecha'].strftime('%d/%m/%Y')} - {row['rubro']} - {row['subcategoria']} - ${row['monto']:,.0f}"):
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.button(f"✏️ Editar", key=f"edit_{row['id']}"):
-                        st.session_state["editando"] = row["id"]
-                with col2:
-                    if st.button(f"🗑️ Eliminar", key=f"delete_{row['id']}"):
-                        df = cargar_gastos()
-                        df = df[df["id"] != row["id"]]
-                        guardar_gastos(df)
-                        st.success("✅ Gasto eliminado")
-                        st.rerun()
-                
-                if st.session_state.get("editando") == row["id"]:
-                    st.subheader("Editar gasto")
-                    nueva_fecha = st.date_input("Fecha", row["fecha"], key=f"fecha_{row['id']}")
-                    nuevo_rubro = st.selectbox("Categoría", list(categorias.keys()), 
-                                               index=list(categorias.keys()).index(row["rubro"]), key=f"rubro_{row['id']}")
-                    nueva_subcategoria = st.selectbox("Subcategoría", categorias[nuevo_rubro]["subcategorias"], 
-                                                      key=f"sub_{row['id']}")
-                    nuevo_monto = st.number_input("Monto", value=float(row["monto"]), step=10.0, key=f"monto_{row['id']}")
+        try:
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                fecha_inicio = st.date_input("Desde", pd.to_datetime(df["fecha"]).min())
+            with col2:
+                fecha_fin = st.date_input("Hasta", pd.to_datetime(df["fecha"]).max())
+            with col3:
+                rubro_filtro = st.selectbox("Categoría", ["Todas"] + list(categorias.keys()))
+            
+            df_filtrado = df[(pd.to_datetime(df["fecha"]) >= pd.to_datetime(fecha_inicio)) & (pd.to_datetime(df["fecha"]) <= pd.to_datetime(fecha_fin))]
+            if rubro_filtro != "Todas":
+                df_filtrado = df_filtrado[df_filtrado["rubro"] == rubro_filtro]
+            
+            for idx, row in df_filtrado.sort_values("fecha", ascending=False).iterrows():
+                with st.expander(f"📅 {pd.to_datetime(row['fecha']).strftime('%d/%m/%Y')} - {row['rubro']} - {row['subcategoria']} - ${row['monto']:,.0f}"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button(f"✏️ Editar", key=f"edit_{row['id']}"):
+                            st.session_state["editando"] = row["id"]
+                    with col2:
+                        if st.button(f"🗑️ Eliminar", key=f"delete_{row['id']}"):
+                            df_temp = cargar_gastos()
+                            df_temp = df_temp[df_temp["id"] != row["id"]]
+                            guardar_gastos(df_temp)
+                            st.success("✅ Gasto eliminado")
+                            st.rerun()
                     
-                    if st.button(f"💾 Guardar cambios", key=f"save_{row['id']}"):
-                        df = cargar_gastos()
-                        df.loc[df["id"] == row["id"], ["fecha", "rubro", "subcategoria", "monto"]] = [
-                            nueva_fecha.strftime("%Y-%m-%d"), nuevo_rubro, nueva_subcategoria, nuevo_monto
-                        ]
-                        guardar_gastos(df)
-                        st.success("✅ Gasto actualizado")
-                        st.session_state["editando"] = None
-                        st.rerun()
-        
-        st.divider()
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("📁 Exportar a Excel", use_container_width=True):
-                excel_data = exportar_excel(df)
-                st.download_button(
-                    label="✅ Descargar",
-                    data=excel_data,
-                    file_name=f"gastos_{datetime.now().strftime('%Y%m%d')}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-        with col2:
-            if st.button("📄 Exportar a CSV", use_container_width=True):
-                csv = df.to_csv(index=False)
-                st.download_button(
-                    label="✅ Descargar",
-                    data=csv,
-                    file_name=f"gastos_{datetime.now().strftime('%Y%m%d')}.csv",
-                    mime="text/csv"
-                )
+                    if st.session_state.get("editando") == row["id"]:
+                        st.subheader("Editar gasto")
+                        nueva_fecha = st.date_input("Fecha", pd.to_datetime(row["fecha"]), key=f"fecha_{row['id']}")
+                        nuevo_rubro = st.selectbox("Categoría", list(categorias.keys()), 
+                                                   index=list(categorias.keys()).index(row["rubro"]), key=f"rubro_{row['id']}")
+                        nueva_subcategoria = st.selectbox("Subcategoría", categorias[nuevo_rubro]["subcategorias"], 
+                                                          key=f"sub_{row['id']}")
+                        nuevo_monto = st.number_input("Monto", value=float(row["monto"]), step=10.0, key=f"monto_{row['id']}")
+                        
+                        if st.button(f"💾 Guardar cambios", key=f"save_{row['id']}"):
+                            df_temp = cargar_gastos()
+                            df_temp.loc[df_temp["id"] == row["id"], ["fecha", "rubro", "subcategoria", "monto"]] = [
+                                nueva_fecha.strftime("%Y-%m-%d"), nuevo_rubro, nueva_subcategoria, nuevo_monto
+                            ]
+                            guardar_gastos(df_temp)
+                            st.success("✅ Gasto actualizado")
+                            st.session_state["editando"] = None
+                            st.rerun()
+            
+            st.divider()
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("📁 Exportar a Excel", use_container_width=True):
+                    excel_data = exportar_excel(df)
+                    st.download_button(
+                        label="✅ Descargar",
+                        data=excel_data,
+                        file_name=f"gastos_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+            with col2:
+                if st.button("📄 Exportar a CSV", use_container_width=True):
+                    csv = df.to_csv(index=False)
+                    st.download_button(
+                        label="✅ Descargar",
+                        data=csv,
+                        file_name=f"gastos_{datetime.now().strftime('%Y%m%d')}.csv",
+                        mime="text/csv"
+                    )
+        except Exception as e:
+            st.error(f"Error en historial: {e}")
     else:
         st.info("No hay gastos registrados")
 
