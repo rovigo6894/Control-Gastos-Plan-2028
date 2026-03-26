@@ -7,12 +7,8 @@ import os
 
 st.set_page_config(page_title="Control Financiero PRO", layout="centered")
 
-# =============================
-# CONFIGURACIÓN
-# =============================
 PASSWORD = "1234"
 
-# Presupuestos por categoría (se pueden editar)
 PRESUPUESTOS_POR_DEFECTO = {
     "Alimentación": 7900,
     "Servicios": 1550,
@@ -21,7 +17,6 @@ PRESUPUESTOS_POR_DEFECTO = {
     "Ahorro": 1500
 }
 
-# Subcategorías
 SUBCATEGORIAS = {
     "Alimentación": ["Despensa", "Comida fuera", "Antojos", "Bebidas", "Café"],
     "Servicios": ["Luz", "Agua", "Gas", "Internet", "Teléfono", "Netflix/Spotify"],
@@ -39,22 +34,38 @@ def get_connection():
 def init_db():
     conn = get_connection()
     c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS gastos (
-            id SERIAL PRIMARY KEY,
-            fecha DATE,
-            rubro TEXT,
-            subcategoria TEXT,
-            monto REAL
-        )
-    ''')
-    # Tabla para guardar presupuestos personalizados
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS presupuestos (
-            rubro TEXT PRIMARY KEY,
-            monto REAL
-        )
-    ''')
+    
+    # Verificar si la columna subcategoria existe
+    c.execute("""
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name='gastos' AND column_name='subcategoria'
+    """)
+    columna_existe = c.fetchone()
+    
+    if not columna_existe:
+        # Si no existe, recrear la tabla correctamente
+        c.execute("DROP TABLE IF EXISTS gastos CASCADE")
+        c.execute("DROP TABLE IF EXISTS presupuestos CASCADE")
+        c.execute('''
+            CREATE TABLE gastos (
+                id SERIAL PRIMARY KEY,
+                fecha DATE,
+                rubro TEXT,
+                subcategoria TEXT,
+                monto REAL
+            )
+        ''')
+        c.execute('''
+            CREATE TABLE presupuestos (
+                rubro TEXT PRIMARY KEY,
+                monto REAL
+            )
+        ''')
+        # Insertar presupuestos por defecto
+        for rubro, monto in PRESUPUESTOS_POR_DEFECTO.items():
+            c.execute("INSERT INTO presupuestos (rubro, monto) VALUES (%s, %s)", (rubro, monto))
+    
     conn.commit()
     conn.close()
 
@@ -99,9 +110,6 @@ def eliminar_ultimo():
     conn.commit()
     conn.close()
 
-# =============================
-# LOGIN
-# =============================
 if "auth" not in st.session_state:
     st.session_state.auth = False
 
@@ -116,9 +124,6 @@ if not st.session_state.auth:
             st.error("Contraseña incorrecta")
     st.stop()
 
-# =============================
-# DATA
-# =============================
 df = cargar_gastos()
 presupuestos = cargar_presupuestos()
 total_presupuesto = sum(presupuestos.values())
@@ -126,9 +131,6 @@ total_presupuesto = sum(presupuestos.values())
 st.title("💰 Control Financiero PRO")
 st.caption("Subcategorías | Presupuestos editables | Alertas inteligentes")
 
-# =============================
-# KPIs
-# =============================
 if not df.empty:
     total = df["monto"].sum()
     dias = datetime.now().day
@@ -142,9 +144,6 @@ if not df.empty:
 
 st.divider()
 
-# =============================
-# EDITAR PRESUPUESTOS (PRO)
-# =============================
 with st.expander("✏️ Editar presupuestos mensuales", expanded=False):
     st.subheader("Ajusta tus presupuestos por categoría")
     nuevos_presupuestos = {}
@@ -161,15 +160,11 @@ with st.expander("✏️ Editar presupuestos mensuales", expanded=False):
 
 st.divider()
 
-# =============================
-# REGISTRAR GASTO CON SUBCATEGORÍAS
-# =============================
 st.subheader("➕ Registrar gasto")
 
 fecha = st.date_input("Fecha", datetime.now())
 rubro = st.selectbox("Categoría", list(presupuestos.keys()))
 
-# Mostrar subcategorías según rubro seleccionado
 subcategoria_opciones = SUBCATEGORIAS[rubro]
 subcategoria = st.selectbox("Subcategoría", subcategoria_opciones)
 
@@ -193,19 +188,13 @@ with col2:
 
 st.divider()
 
-# =============================
-# ANÁLISIS Y ALARMAS
-# =============================
 if not df.empty:
-    # Resumen por rubro
     resumen = df.groupby("rubro")["monto"].sum().reset_index()
     resumen["presupuesto"] = resumen["rubro"].map(presupuestos)
     resumen["uso %"] = (resumen["monto"] / resumen["presupuesto"] * 100).fillna(0)
 
-    # ALARMAS INTELIGENTES
     st.subheader("🚨 Alertas y diagnóstico")
     
-    # Buscar categoría con mayor % de uso
     top = resumen.sort_values(by="uso %", ascending=False).iloc[0]
     
     if top["uso %"] > 100:
@@ -215,7 +204,6 @@ if not df.empty:
     else:
         st.success("✅ Todo en orden. Buen control de gastos")
     
-    # Mostrar todas las categorías con su estado
     st.subheader("📊 Estado por categoría")
     for _, row in resumen.iterrows():
         porcentaje = row["uso %"]
@@ -226,21 +214,17 @@ if not df.empty:
         else:
             st.success(f"**{row['rubro']}**: ${row['monto']:,.0f} / ${row['presupuesto']:,.0f} ({porcentaje:.0f}%) 🟢 OK")
 
-    # Gráfica
     fig = px.pie(resumen, names="rubro", values="monto", title="Distribución de gastos por categoría")
     st.plotly_chart(fig, use_container_width=True)
     
-    # Resumen por subcategoría
     st.subheader("📋 Detalle por subcategoría")
     detalle_sub = df.groupby(["rubro", "subcategoria"])["monto"].sum().reset_index()
     detalle_sub = detalle_sub.sort_values("monto", ascending=False)
     st.dataframe(detalle_sub, use_container_width=True)
 
-    # Historial completo
     st.subheader("📋 Historial de movimientos")
     st.dataframe(df.sort_values(by="fecha", ascending=False), use_container_width=True)
 
-    # Botón de respaldo
     if st.button("📁 Descargar respaldo (CSV)"):
         csv = df.to_csv(index=False)
         st.download_button(
