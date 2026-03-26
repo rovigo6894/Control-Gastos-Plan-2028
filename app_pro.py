@@ -7,9 +7,6 @@ import os
 import json
 import base64
 from io import BytesIO
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -20,7 +17,7 @@ st.set_page_config(page_title="Control Financiero PRO", layout="wide", page_icon
 # ============================================
 PASSWORD = "1234"
 
-# Categorías y subcategorías por defecto (el usuario puede modificar)
+# Categorías y subcategorías por defecto
 CATEGORIAS_POR_DEFECTO = {
     "Alimentación": {
         "presupuesto": 7900,
@@ -79,12 +76,15 @@ ARCHIVO_METAS = "metas.json"
 ARCHIVO_RECORDATORIOS = "recordatorios.json"
 
 # ============================================
-# FUNCIONES DE CARGA Y GUARDADO
+# FUNCIONES DE CARGA Y GUARDADO CON MANEJO DE ERRORES
 # ============================================
 def cargar_categorias():
     if os.path.exists(ARCHIVO_CATEGORIAS):
-        with open(ARCHIVO_CATEGORIAS, 'r', encoding='utf-8') as f:
-            return json.load(f)
+        try:
+            with open(ARCHIVO_CATEGORIAS, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except:
+            return CATEGORIAS_POR_DEFECTO.copy()
     return CATEGORIAS_POR_DEFECTO.copy()
 
 def guardar_categorias(categorias):
@@ -93,21 +93,41 @@ def guardar_categorias(categorias):
 
 def cargar_gastos():
     if os.path.exists(ARCHIVO_GASTOS):
-        df = pd.read_csv(ARCHIVO_GASTOS)
-        if not df.empty:
-            df["fecha"] = pd.to_datetime(df["fecha"])
-            if "recibo" not in df.columns:
-                df["recibo"] = ""
-        return df
+        try:
+            df = pd.read_csv(ARCHIVO_GASTOS)
+            if not df.empty:
+                # Manejo seguro de fechas
+                df["fecha"] = pd.to_datetime(df["fecha"], errors='coerce')
+                # Eliminar filas con fechas inválidas
+                df = df.dropna(subset=["fecha"])
+                if "recibo" not in df.columns:
+                    df["recibo"] = ""
+                if "descripcion" not in df.columns:
+                    df["descripcion"] = ""
+                if "id" not in df.columns:
+                    df["id"] = range(1, len(df) + 1)
+            return df
+        except Exception as e:
+            # Si hay error, crear archivo nuevo
+            return pd.DataFrame(columns=["id", "fecha", "rubro", "subcategoria", "monto", "descripcion", "recibo"])
     return pd.DataFrame(columns=["id", "fecha", "rubro", "subcategoria", "monto", "descripcion", "recibo"])
 
 def guardar_gastos(df):
-    df.to_csv(ARCHIVO_GASTOS, index=False)
+    if not df.empty:
+        df_guardar = df.copy()
+        df_guardar["fecha"] = df_guardar["fecha"].dt.strftime("%Y-%m-%d")
+        df_guardar.to_csv(ARCHIVO_GASTOS, index=False)
+    else:
+        if os.path.exists(ARCHIVO_GASTOS):
+            os.remove(ARCHIVO_GASTOS)
 
 def cargar_metas():
     if os.path.exists(ARCHIVO_METAS):
-        with open(ARCHIVO_METAS, 'r', encoding='utf-8') as f:
-            return json.load(f)
+        try:
+            with open(ARCHIVO_METAS, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except:
+            return []
     return []
 
 def guardar_metas(metas):
@@ -116,8 +136,11 @@ def guardar_metas(metas):
 
 def cargar_recordatorios():
     if os.path.exists(ARCHIVO_RECORDATORIOS):
-        with open(ARCHIVO_RECORDATORIOS, 'r', encoding='utf-8') as f:
-            return json.load(f)
+        try:
+            with open(ARCHIVO_RECORDATORIOS, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except:
+            return []
     return []
 
 def guardar_recordatorios(recordatorios):
@@ -133,25 +156,27 @@ def obtener_nuevo_id(df):
 # FUNCIONES DE ANÁLISIS
 # ============================================
 def calcular_tendencias(df, meses=3):
-    if df.empty:
+    if df.empty or len(df) < 10:
         return None
     df_mes = df.copy()
     df_mes["mes"] = df_mes["fecha"].dt.to_period("M")
     gastos_mensuales = df_mes.groupby("mes")["monto"].sum().reset_index()
     if len(gastos_mensuales) >= 2:
         ultimos = gastos_mensuales.tail(meses)
-        if len(ultimos) >= 2:
+        if len(ultimos) >= 2 and ultimos["monto"].iloc[-2] > 0:
             tendencia = (ultimos["monto"].iloc[-1] - ultimos["monto"].iloc[-2]) / ultimos["monto"].iloc[-2] * 100
             return tendencia
     return None
 
 def predecir_gasto_mensual(df):
-    if df.empty or len(df) < 30:
+    if df.empty or len(df) < 5:
         return None
     df_dias = df.groupby(df["fecha"].dt.day)["monto"].sum().reset_index()
-    promedio_diario = df_dias["monto"].mean()
-    dias_restantes = 30 - datetime.now().day
-    return promedio_diario * dias_restantes
+    if len(df_dias) > 0:
+        promedio_diario = df_dias["monto"].mean()
+        dias_restantes = 30 - datetime.now().day
+        return promedio_diario * dias_restantes
+    return None
 
 def comparar_meses(df):
     if df.empty:
@@ -174,25 +199,16 @@ def comparar_meses(df):
         "variacion": variacion
     }
 
-# ============================================
-# FUNCIONES DE EXPORTACIÓN
-# ============================================
 def exportar_excel(df):
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, sheet_name='Gastos', index=False)
-        resumen = df.groupby("rubro")["monto"].sum().reset_index()
-        resumen.to_excel(writer, sheet_name='Resumen', index=False)
+        df_export = df.copy()
+        df_export["fecha"] = df_export["fecha"].dt.strftime("%d/%m/%Y")
+        df_export.to_excel(writer, sheet_name='Gastos', index=False)
+        if not df_export.empty:
+            resumen = df_export.groupby("rubro")["monto"].sum().reset_index()
+            resumen.to_excel(writer, sheet_name='Resumen', index=False)
     return output.getvalue()
-
-# ============================================
-# FUNCIÓN DE ALERTA POR CORREO (opcional)
-# ============================================
-def enviar_alerta_correo(destinatario, asunto, mensaje):
-    # Configurar con tus datos de Gmail
-    # Por ahora es placeholder
-    st.info(f"📧 Alerta enviada a {destinatario}: {asunto}")
-    return True
 
 # ============================================
 # LOGIN
@@ -231,13 +247,11 @@ recordatorios = cargar_recordatorios()
 total_presupuesto = sum(c["presupuesto"] for c in categorias.values())
 
 # ============================================
-# SIDEBAR - MODO OSCURO Y NAVEGACIÓN
+# SIDEBAR
 # ============================================
 with st.sidebar:
-    st.image("https://img.icons8.com/fluency/96/money.png", width=60)
     st.title("💰 Control PRO")
     
-    # Modo oscuro/claro
     modo = st.toggle("🌙 Modo oscuro", value=st.session_state.modo_oscuro)
     if modo != st.session_state.modo_oscuro:
         st.session_state.modo_oscuro = modo
@@ -245,7 +259,6 @@ with st.sidebar:
     
     st.divider()
     
-    # Navegación
     pagina = st.radio("📌 Navegación", [
         "📊 Dashboard", 
         "📝 Registrar", 
@@ -259,7 +272,6 @@ with st.sidebar:
     
     st.divider()
     
-    # Resumen rápido
     if not df.empty:
         gasto_mes = df[df["fecha"].dt.month == datetime.now().month]["monto"].sum()
         st.metric("📅 Gasto del mes", f"${gasto_mes:,.0f}")
@@ -269,49 +281,41 @@ with st.sidebar:
         st.caption(f"{porcentaje:.0f}% usado")
 
 # ============================================
-# ESTILOS MODO OSCURO/CLARO
+# ESTILOS
 # ============================================
 if st.session_state.modo_oscuro:
     st.markdown("""
         <style>
             .stApp { background-color: #0e1117; color: #ffffff; }
-            .stMetric { background-color: #1e1e2e; border-radius: 10px; padding: 10px; }
-        </style>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown("""
-        <style>
-            .stApp { background-color: #f5f5f5; }
-            .stMetric { background-color: #ffffff; border-radius: 10px; padding: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         </style>
     """, unsafe_allow_html=True)
 
 # ============================================
-# DASHBOARD PRINCIPAL
+# DASHBOARD
 # ============================================
 if st.session_state.pagina == "Dashboard":
     st.title("📊 Dashboard Financiero")
     
     if not df.empty:
-        # KPIs principales
         gasto_mes = df[df["fecha"].dt.month == datetime.now().month]["monto"].sum()
         gasto_dia = df[df["fecha"].dt.date == datetime.now().date()]["monto"].sum()
         
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            st.metric("💸 Gasto del mes", f"${gasto_mes:,.0f}", delta=f"-${total_presupuesto - gasto_mes:,.0f}")
+            st.metric("💸 Gasto del mes", f"${gasto_mes:,.0f}")
         with col2:
             st.metric("📅 Gasto hoy", f"${gasto_dia:,.0f}")
         with col3:
             tendencia = calcular_tendencias(df)
             if tendencia is not None:
-                st.metric("📈 Tendencia mensual", f"{tendencia:.1f}%", delta=f"{tendencia:.1f}%")
+                st.metric("📈 Tendencia", f"{tendencia:.1f}%")
+            else:
+                st.metric("📈 Tendencia", "N/D")
         with col4:
             prediccion = predecir_gasto_mensual(df)
             if prediccion is not None:
                 st.metric("🔮 Predicción", f"${prediccion:,.0f}")
         
-        # Comparativa mes vs mes
         comparacion = comparar_meses(df)
         if comparacion:
             st.subheader("📊 Comparativa mes vs mes")
@@ -319,57 +323,42 @@ if st.session_state.pagina == "Dashboard":
             with col1:
                 st.metric("Mes actual", f"${comparacion['actual']:,.0f}")
             with col2:
-                delta = comparacion['variacion']
-                st.metric("Mes anterior", f"${comparacion['anterior']:,.0f}", delta=f"{delta:.1f}%")
+                st.metric("Mes anterior", f"${comparacion['anterior']:,.0f}", delta=f"{comparacion['variacion']:.1f}%")
         
         st.divider()
         
-        # Gráficas principales
         col1, col2 = st.columns(2)
-        
         with col1:
-            st.subheader("🥧 Distribución por categoría")
+            st.subheader("🥧 Distribución")
             resumen = df[df["fecha"].dt.month == datetime.now().month].groupby("rubro")["monto"].sum().reset_index()
             if not resumen.empty:
                 fig = px.pie(resumen, names="rubro", values="monto", hole=0.3)
-                fig.update_layout(height=400)
                 st.plotly_chart(fig, use_container_width=True)
         
         with col2:
-            st.subheader("📈 Evolución mensual")
+            st.subheader("📈 Evolución")
             df["mes"] = df["fecha"].dt.to_period("M").astype(str)
             evolucion = df.groupby("mes")["monto"].sum().reset_index()
             fig = px.line(evolucion, x="mes", y="monto", markers=True)
-            fig.update_layout(height=400)
             st.plotly_chart(fig, use_container_width=True)
         
-        # Estado de metas
-        if metas:
-            st.subheader("🎯 Progreso de metas")
-            for meta in metas:
-                gastado = df[df["subcategoria"] == meta["nombre"]]["monto"].sum() if "nombre" in meta else 0
-                if "monto" in meta:
-                    progreso = min(gastado / meta["monto"], 1.0)
-                    st.write(f"**{meta.get('nombre', 'Meta')}**: ${gastado:,.0f} / ${meta['monto']:,.0f}")
-                    st.progress(progreso)
-        
-        # Alertas
         st.subheader("🚨 Alertas")
         resumen_cat = df[df["fecha"].dt.month == datetime.now().month].groupby("rubro")["monto"].sum().reset_index()
         alertas = False
         for _, row in resumen_cat.iterrows():
             presupuesto = categorias.get(row["rubro"], {}).get("presupuesto", 0)
-            porcentaje = (row["monto"] / presupuesto * 100) if presupuesto > 0 else 0
-            if porcentaje > 100:
-                st.error(f"⚠️ EXCESO en {row['rubro']}: ${row['monto']:,.0f} / ${presupuesto:,.0f} ({porcentaje:.0f}%)")
-                alertas = True
-            elif porcentaje > 80:
-                st.warning(f"📌 ALERTA en {row['rubro']}: ${row['monto']:,.0f} / ${presupuesto:,.0f} ({porcentaje:.0f}%)")
-                alertas = True
+            if presupuesto > 0:
+                porcentaje = (row["monto"] / presupuesto * 100)
+                if porcentaje > 100:
+                    st.error(f"⚠️ EXCESO en {row['rubro']}: ${row['monto']:,.0f} / ${presupuesto:,.0f} ({porcentaje:.0f}%)")
+                    alertas = True
+                elif porcentaje > 80:
+                    st.warning(f"📌 ALERTA en {row['rubro']}: ${row['monto']:,.0f} / ${presupuesto:,.0f} ({porcentaje:.0f}%)")
+                    alertas = True
         if not alertas:
-            st.success("✅ Todo en orden. Buen control de gastos")
+            st.success("✅ Todo en orden")
     else:
-        st.info("📝 No hay gastos registrados. Comienza agregando tu primer gasto.")
+        st.info("📝 No hay gastos registrados")
 
 # ============================================
 # REGISTRAR GASTO
@@ -388,15 +377,11 @@ elif st.session_state.pagina == "Registrar":
     with col2:
         monto = st.number_input("💰 Monto ($)", step=10.0, min_value=0.0, format="%.2f")
         descripcion = st.text_area("📝 Descripción", placeholder="Ej: Compras del supermercado", height=68)
-        recibo = st.file_uploader("📎 Subir recibo (opcional)", type=["jpg", "png", "pdf"])
     
     if st.button("💾 Guardar gasto", type="primary", use_container_width=True):
         if monto > 0:
             df = cargar_gastos()
             nuevo_id = obtener_nuevo_id(df)
-            recibo_data = ""
-            if recibo:
-                recibo_data = base64.b64encode(recibo.read()).decode()
             
             nueva_fila = pd.DataFrame([{
                 "id": nuevo_id,
@@ -405,7 +390,7 @@ elif st.session_state.pagina == "Registrar":
                 "subcategoria": subcategoria,
                 "monto": monto,
                 "descripcion": descripcion,
-                "recibo": recibo_data
+                "recibo": ""
             }])
             df = pd.concat([df, nueva_fila], ignore_index=True)
             guardar_gastos(df)
@@ -416,12 +401,12 @@ elif st.session_state.pagina == "Registrar":
             st.warning("⚠️ Ingresa un monto válido")
 
 # ============================================
-# CONFIGURACIÓN (Categorías y presupuestos)
+# CONFIGURACIÓN
 # ============================================
 elif st.session_state.pagina == "Configuración":
     st.title("✏️ Configuración")
     
-    tab1, tab2 = st.tabs(["📂 Categorías y presupuestos", "🏷️ Subcategorías"])
+    tab1, tab2 = st.tabs(["📂 Presupuestos", "🏷️ Subcategorías"])
     
     with tab1:
         st.subheader("Editar presupuestos mensuales")
@@ -442,7 +427,7 @@ elif st.session_state.pagina == "Configuración":
         rubro_editar = st.selectbox("Selecciona categoría", list(categorias.keys()))
         
         subcategorias_actuales = categorias[rubro_editar]["subcategorias"]
-        st.write("Subcategorías actuales:")
+        st.write("**Subcategorías actuales:**")
         for sc in subcategorias_actuales:
             st.write(f"- {sc}")
         
@@ -463,28 +448,26 @@ elif st.session_state.pagina == "Configuración":
                 st.rerun()
 
 # ============================================
-# METAS DE AHORRO
+# METAS
 # ============================================
 elif st.session_state.pagina == "Metas":
     st.title("🎯 Metas de ahorro")
     
-    # Mostrar metas existentes
     if metas:
         st.subheader("📊 Progreso de metas")
         for i, meta in enumerate(metas):
-            gastado = df[df["subcategoria"] == meta["nombre"]]["monto"].sum()
+            gastado = df[df["subcategoria"] == meta["nombre"]]["monto"].sum() if not df.empty else 0
             progreso = min(gastado / meta["monto"], 1.0) if meta["monto"] > 0 else 0
             col1, col2 = st.columns([3, 1])
             with col1:
                 st.write(f"**{meta['nombre']}**: ${gastado:,.0f} / ${meta['monto']:,.0f}")
                 st.progress(progreso)
             with col2:
-                if st.button(f"🗑️", key=f"del_{i}"):
+                if st.button(f"🗑️ Eliminar", key=f"del_{i}"):
                     metas.pop(i)
                     guardar_metas(metas)
                     st.rerun()
     
-    # Agregar nueva meta
     st.subheader("➕ Nueva meta")
     col1, col2 = st.columns(2)
     with col1:
@@ -500,12 +483,11 @@ elif st.session_state.pagina == "Metas":
             st.rerun()
 
 # ============================================
-# RECORDATORIOS DE PAGOS
+# RECORDATORIOS
 # ============================================
 elif st.session_state.pagina == "Recordatorios":
     st.title("⏰ Recordatorios de pagos")
     
-    # Mostrar recordatorios existentes
     if recordatorios:
         st.subheader("📋 Recordatorios activos")
         for i, rec in enumerate(recordatorios):
@@ -522,7 +504,6 @@ elif st.session_state.pagina == "Recordatorios":
                     guardar_recordatorios(recordatorios)
                     st.rerun()
     
-    # Agregar nuevo recordatorio
     st.subheader("➕ Nuevo recordatorio")
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -543,7 +524,6 @@ elif st.session_state.pagina == "Recordatorios":
             st.success(f"✅ Recordatorio '{nombre_rec}' creado")
             st.rerun()
     
-    # Alertas de recordatorios próximos
     st.subheader("📅 Próximos pagos")
     hoy = datetime.now().date()
     proximos = [r for r in recordatorios if datetime.strptime(r["fecha"], "%Y-%m-%d").date() >= hoy]
@@ -556,13 +536,12 @@ elif st.session_state.pagina == "Recordatorios":
         st.info("No hay pagos próximos")
 
 # ============================================
-# ANÁLISIS AVANZADO
+# ANÁLISIS
 # ============================================
 elif st.session_state.pagina == "Análisis":
     st.title("📈 Análisis avanzado")
     
     if not df.empty:
-        # Filtros
         col1, col2 = st.columns(2)
         with col1:
             fecha_inicio = st.date_input("Desde", df["fecha"].min())
@@ -572,39 +551,35 @@ elif st.session_state.pagina == "Análisis":
         df_filtrado = df[(df["fecha"] >= pd.to_datetime(fecha_inicio)) & (df["fecha"] <= pd.to_datetime(fecha_fin))]
         
         if not df_filtrado.empty:
-            # Top categorías
-            st.subheader("🏆 Top categorías con mayor gasto")
+            st.subheader("🏆 Top categorías")
             top_cat = df_filtrado.groupby("rubro")["monto"].sum().sort_values(ascending=False).head(5)
             fig = px.bar(top_cat, x=top_cat.values, y=top_cat.index, orientation='h')
             st.plotly_chart(fig, use_container_width=True)
             
-            # Evolución
-            st.subheader("📊 Evolución de gastos")
+            st.subheader("📊 Evolución")
             df_filtrado["mes"] = df_filtrado["fecha"].dt.to_period("M").astype(str)
             evolucion = df_filtrado.groupby("mes")["monto"].sum().reset_index()
             fig = px.area(evolucion, x="mes", y="monto")
             st.plotly_chart(fig, use_container_width=True)
             
-            # Heatmap por día de la semana
-            st.subheader("📅 Gastos por día de la semana")
-            df_filtrado["dia_semana"] = df_filtrado["fecha"].dt.day_name()
-            gastos_dia = df_filtrado.groupby("dia_semana")["monto"].sum().reset_index()
-            orden_dias = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-            gastos_dia["dia_semana"] = pd.Categorical(gastos_dia["dia_semana"], categories=orden_dias, ordered=True)
-            gastos_dia = gastos_dia.sort_values("dia_semana")
-            fig = px.bar(gastos_dia, x="dia_semana", y="monto")
+            st.subheader("📅 Gastos por día")
+            df_filtrado["dia"] = df_filtrado["fecha"].dt.day_name()
+            gastos_dia = df_filtrado.groupby("dia")["monto"].sum().reset_index()
+            orden = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+            gastos_dia["dia"] = pd.Categorical(gastos_dia["dia"], categories=orden, ordered=True)
+            gastos_dia = gastos_dia.sort_values("dia")
+            fig = px.bar(gastos_dia, x="dia", y="monto")
             st.plotly_chart(fig, use_container_width=True)
     else:
-        st.info("No hay datos suficientes para análisis")
+        st.info("No hay datos suficientes")
 
 # ============================================
-# HISTORIAL COMPLETO
+# HISTORIAL
 # ============================================
 elif st.session_state.pagina == "Historial":
     st.title("📋 Historial completo")
     
     if not df.empty:
-        # Filtros
         col1, col2, col3 = st.columns(3)
         with col1:
             fecha_inicio = st.date_input("Desde", df["fecha"].min())
@@ -617,7 +592,6 @@ elif st.session_state.pagina == "Historial":
         if rubro_filtro != "Todas":
             df_filtrado = df_filtrado[df_filtrado["rubro"] == rubro_filtro]
         
-        # Mostrar gastos con opciones de edición/eliminación
         for idx, row in df_filtrado.sort_values("fecha", ascending=False).iterrows():
             with st.expander(f"📅 {row['fecha'].strftime('%d/%m/%Y')} - {row['rubro']} - {row['subcategoria']} - ${row['monto']:,.0f}"):
                 col1, col2 = st.columns(2)
@@ -651,14 +625,13 @@ elif st.session_state.pagina == "Historial":
                         st.session_state["editando"] = None
                         st.rerun()
         
-        # Botón de exportación
         st.divider()
         col1, col2 = st.columns(2)
         with col1:
             if st.button("📁 Exportar a Excel", use_container_width=True):
                 excel_data = exportar_excel(df)
                 st.download_button(
-                    label="✅ Descargar Excel",
+                    label="✅ Descargar",
                     data=excel_data,
                     file_name=f"gastos_{datetime.now().strftime('%Y%m%d')}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -667,7 +640,7 @@ elif st.session_state.pagina == "Historial":
             if st.button("📄 Exportar a CSV", use_container_width=True):
                 csv = df.to_csv(index=False)
                 st.download_button(
-                    label="✅ Descargar CSV",
+                    label="✅ Descargar",
                     data=csv,
                     file_name=f"gastos_{datetime.now().strftime('%Y%m%d')}.csv",
                     mime="text/csv"
@@ -676,4 +649,4 @@ elif st.session_state.pagina == "Historial":
         st.info("No hay gastos registrados")
 
 st.divider()
-st.caption("💰 Control Financiero PRO | Versión Definitiva | 12 categorías | Metas | Recordatorios | Análisis avanzado | Exportación Excel")
+st.caption("💰 Control Financiero PRO | 12 categorías | Metas | Recordatorios | Análisis avanzado")
